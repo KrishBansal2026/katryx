@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Account | KATRYX</title><link rel="stylesheet" href="styles.css">
+<style>
+.account-page{min-height:100vh;background:#f5f0e9;padding:48px 18px;color:#2b1a12;font-family:Arial,sans-serif}.account-wrap{max-width:980px;margin:auto}.account-head{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:28px}.account-head h1{font:48px Georgia,serif;margin:0}.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.account-card{background:#fff;padding:26px;border:1px solid #e6d9cc}.account-card h2{font:30px Georgia,serif;margin:0 0 18px}.account-card label{display:block;font-size:12px;margin:12px 0 6px;text-transform:uppercase;letter-spacing:.08em}.account-card input{width:100%;padding:13px;border:1px solid #d9cabe;box-sizing:border-box}.account-btn{background:#32190e;color:white;border:0;padding:13px 18px;cursor:pointer;margin-top:16px}.account-muted{color:#82766d;font-size:13px}.account-list{display:grid;gap:12px}.account-order{border-top:1px solid #eadfd4;padding:12px 0;font-size:13px}.account-error{color:#b33;font-size:13px;min-height:20px}@media(max-width:700px){.account-grid{grid-template-columns:1fr}.account-head h1{font-size:38px}}
+</style></head><body class="account-page"><main class="account-wrap">
+<div class="account-head"><div><div style="letter-spacing:.25em;font-size:12px">KATRYX</div><h1>My Account</h1><p class="account-muted">Your details, saved designs and orders.</p></div><div><a href="index.html">← Store</a> <button class="account-btn" id="logout">Sign out</button></div></div>
+<div class="account-grid">
+<section class="account-card"><h2>Profile details</h2><form id="profile-form"><label>Full name</label><input id="name" required minlength="2"><label>Email</label><input id="email" type="email" disabled><label>Phone</label><input id="phone"><label>Address</label><input id="address"><label>City</label><input id="city"><label>PIN code</label><input id="pincode"><button class="account-btn">Save profile</button><p id="profile-message" class="account-error"></p></form></section>
+<section class="account-card"><h2>Order history</h2><div id="orders" class="account-list"><p class="account-muted">Loading your orders…</p></div></section>
+<section class="account-card"><h2>Saved designs</h2><div id="designs" class="account-list"><p class="account-muted">Loading saved designs…</p></div></section>
+<section class="account-card"><h2>Shopping cart</h2><p class="account-muted" id="cart-info">Loading your saved cart…</p><a href="index.html#collection">Continue shopping →</a></section>
+</div></main>  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="firebase-service.js"></script>
+<script>
+(async function(){
+ const S=window.FirebaseService; if(!S){location.href='login.html';return;} 
+ const wait=()=>new Promise(resolve=>{let off=S.onAuthChange(u=>{off&&off();resolve(u)});setTimeout(()=>resolve(S.getCurrentUser()),1200)});
+ const user=await wait(); if(!user){location.href='login.html';return;}
+ const $=id=>document.getElementById(id);
+ const profile=await S.getUserProfile(user.uid)||{};
+ $('name').value=profile.name||user.displayName||'';$('email').value=user.email||'';
+ $('phone').value=profile.phone||'';$('address').value=profile.address||'';$('city').value=profile.city||'';$('pincode').value=profile.pincode||'';
+ $('profile-form').addEventListener('submit',async e=>{e.preventDefault();$('profile-message').textContent='Saving…';try{await S.updateUserProfile(user.uid,{name:$('name').value,phone:$('phone').value,address:$('address').value,city:$('city').value,pincode:$('pincode').value});$('profile-message').textContent='Profile saved.';}catch(err){$('profile-message').textContent=err.message;}});
+ $('logout').onclick=async()=>{await S.logoutUser();location.href='index.html';};
+ const money=n=>'₹'+Number(n||0).toLocaleString('en-IN');
+ const orders=await S.fetchUserOrders(user.uid);$('orders').innerHTML=orders.length?orders.map(o=>`<div class="account-order"><b>${o.orderId||o.id}</b><br>${o.status||'Received'} · ${money(o.totalAmount)}<br><span class="account-muted">${new Date(o.createdAt).toLocaleDateString()}</span></div>`).join(''):'<p class="account-muted">No orders yet.</p>';
+ const designs=await S.fetchUserCustomDesigns(user.uid);$('designs').innerHTML=designs.length?designs.map(d=>`<div class="account-order"><b>${d.designName||d.productName||'Saved design'}</b><br>${d.leatherFinish||''} · ${d.hardwareFinish||''}</div>`).join(''):'<p class="account-muted">No saved designs yet.</p>';
+ const cart=await S.fetchUserCart(user.uid);$('cart-info').textContent=cart.length?cart.reduce((n,i)=>n+(i.quantity||1),0)+' item(s) saved in your account cart.':'Your account cart is empty.';
+})();
+</script></body></html>

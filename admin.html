@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#24140e"><title>Owner Dashboard | KATRYX</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root{--ink:#27170f;--muted:#806f62;--paper:#f5f0e9;--line:#e8ddd1;--accent:#3a2115;--gold:#b18a5b}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,sans-serif}
+    .admin-page{min-height:100vh;padding:34px 20px 60px}.admin-wrap{max-width:1240px;margin:auto}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:22px}
+    .eyebrow{font-size:11px;letter-spacing:.28em;color:var(--gold);font-weight:700}.top h1{font:46px Georgia,serif;margin:8px 0 0}.top-actions{display:flex;gap:10px;align-items:center}
+    .btn{border:0;background:var(--accent);color:white;padding:12px 17px;cursor:pointer;text-decoration:none;font-size:13px}.btn.secondary{background:transparent;color:var(--ink);border:1px solid var(--line)}
+    #admin-message{padding:12px 14px;background:#fff;border:1px solid var(--line);margin:20px 0;color:var(--muted);font-size:13px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:22px 0}.stat{background:white;border:1px solid var(--line);padding:18px}.stat span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.12em}.stat strong{display:block;font:30px Georgia,serif;margin-top:9px}
+    .panel{background:white;border:1px solid var(--line);padding:22px;margin-top:18px}.panel-head{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:15px}.panel h2{font:28px Georgia,serif;margin:0}.tools{display:flex;gap:8px;flex-wrap:wrap}.tools input,.tools select,.status-select{padding:10px;border:1px solid var(--line);background:white;color:var(--ink)}
+    .orders{display:grid;gap:13px}.order{border:1px solid var(--line);padding:17px}.order-top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}.order-id{font-weight:700;letter-spacing:.04em}.order-date{font-size:12px;color:var(--muted);margin-top:5px}.order-total{font:23px Georgia,serif}.tag{display:inline-block;background:#f2ebe3;padding:6px 9px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;margin-top:8px}
+    .order-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}.detail-title{font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--gold);font-weight:bold;margin-bottom:7px}.detail{font-size:13px;line-height:1.65;color:#514237;overflow-wrap:anywhere}.items{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}.item-row{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:5px 0}.status-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:15px;padding-top:14px;border-top:1px solid var(--line)}.status-actions label{font-size:12px;color:var(--muted)}.status-select{min-width:150px}.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line)}
+    .customers-table{width:100%;border-collapse:collapse;font-size:13px}.customers-table th,.customers-table td{text-align:left;padding:12px 9px;border-bottom:1px solid var(--line);vertical-align:top}.customers-table th{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+    @media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.order-grid{grid-template-columns:1fr}.top h1{font-size:36px}.panel{padding:15px}.customers-wrap{overflow-x:auto}}
+  </style>
+</head>
+<body><main class="admin-page"><div class="admin-wrap">
+  <header class="top"><div><div class="eyebrow">KATRYX · PRIVATE OWNER AREA</div><h1>Owner Dashboard</h1></div><div class="top-actions"><a class="btn secondary" href="index.html">← View store</a><button id="logout" class="btn">Sign out</button></div></header>
+  <p id="admin-message">Verifying owner permissions…</p>
+  <div id="admin-content" hidden>
+    <section class="stats">
+      <div class="stat"><span>Total orders</span><strong id="stat-total">0</strong></div>
+      <div class="stat"><span>Queued</span><strong id="stat-queued">0</strong></div>
+      <div class="stat"><span>In progress</span><strong id="stat-progress">0</strong></div>
+      <div class="stat"><span>Customers</span><strong id="stat-customers">0</strong></div>
+    </section>
+    <section class="panel"><div class="panel-head"><h2>Customer orders</h2><div class="tools"><input id="order-search" type="search" placeholder="Search order or customer…" aria-label="Search orders"><select id="status-filter" aria-label="Filter orders"><option value="all">All statuses</option><option value="commission_queued">Queued</option><option value="processing">Processing</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select></div></div><div id="orders" class="orders"><div class="empty">Loading orders…</div></div></section>
+    <section class="panel"><div class="panel-head"><h2>Customers</h2><span id="customer-count" class="detail">Latest registered customers</span></div><div class="customers-wrap" id="customers">Loading customers…</div></section>
+  </div>
+</div></main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><script src="firebase-service.js"></script>
+<script>
+(async function(){
+ const S=window.FirebaseService, $=id=>document.getElementById(id); if(!S){$('admin-message').textContent='Firebase service unavailable. Check firebase-config.js and firebase-service.js.';return;}
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const money=v=>'₹'+Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2});
+ const statuses=[['commission_queued','Queued'],['processing','Processing'],['shipped','Shipped'],['delivered','Delivered'],['cancelled','Cancelled']];
+ let orders=[],users=[];
+ try{
+   const user=await new Promise(resolve=>{let done=false;const timer=setTimeout(()=>{if(!done){done=true;resolve(S.getCurrentUser());}},2500);S.onAuthChange(u=>{if(!done){done=true;clearTimeout(timer);resolve(u);}});});
+   if(!user){$('admin-message').textContent='Please sign in with the owner account first. Redirecting to login…';setTimeout(()=>location.href='login.html',1000);return;}
+   if(!(await S.isCurrentUserAdmin())){$('admin-message').textContent='Access denied. This account is not authorised as the KATRYX owner. Sign in with the admin account after its Firebase admin permission has been configured.';return;}
+   $('admin-message').textContent='Owner access verified · Data is loaded directly from your KATRYX Firebase project.';$('admin-content').hidden=false;
+   [orders,users]=await Promise.all([S.fetchAllOrdersForAdmin(),S.fetchAllUsersForAdmin()]);
+   $('stat-total').textContent=orders.length;$('stat-queued').textContent=orders.filter(o=>(o.status||'commission_queued')==='commission_queued').length;$('stat-progress').textContent=orders.filter(o=>['processing','shipped'].includes(o.status)).length;$('stat-customers').textContent=users.length;$('customer-count').textContent=users.length+' registered';
+   renderOrders();renderCustomers();
+ }catch(e){$('admin-message').textContent=e.message||'Could not load dashboard data. Check Firestore rules and admin permissions.';}
+ function renderOrders(){
+   const q=$('order-search').value.trim().toLowerCase(),f=$('status-filter').value;
+   const filtered=orders.filter(o=>{const c=o.customerDetails||{},hay=[o.orderId,o.id,c.name,c.email,c.phone].join(' ').toLowerCase();return (!q||hay.includes(q))&&(f==='all'||(o.status||'commission_queued')===f);});
+   $('orders').innerHTML=filtered.length?filtered.map(o=>{const c=o.customerDetails||{},status=o.status||'commission_queued',date=o.createdAt?new Date(o.createdAt).toLocaleString('en-IN'):'Date unavailable';const itemRows=(o.items||[]).map(it=>`<div class="item-row"><span>${esc(it.name||it.title||it.productName||'Product')} × ${esc(it.quantity||1)}</span><strong>${money(it.price||it.total||0)}</strong></div>`).join('');return `<article class="order" data-id="${esc(o.id)}"><div class="order-top"><div><div class="order-id">${esc(o.orderId||'KATRYX Order')}</div><div class="order-date">${esc(date)}</div><span class="tag">${esc(status.replaceAll('_',' '))}</span></div><div class="order-total">${money(o.totalAmount)}</div></div><div class="order-grid"><div><div class="detail-title">Customer details</div><div class="detail"><strong>${esc(c.name||'Name not provided')}</strong><br>${esc(c.email||'No email')}<br>${esc(c.phone||'No phone')}<br>${esc([c.address,c.city,c.pincode].filter(Boolean).join(', ')||'No address provided')}</div></div><div><div class="detail-title">Payment / order info</div><div class="detail">${o.isPaid?'Paid':'Unpaid demonstration order'}<br>${esc(o.paymentStatus||'Payment not processed')}<br><small>Customer UID: ${esc(o.userId||'—')}</small></div></div></div><div class="items"><div class="detail-title">Items ordered</div>${itemRows||'<div class="detail">No item breakdown stored for this order.</div>'}</div><div class="status-actions"><label for="status-${esc(o.id)}">Update order status</label><select id="status-${esc(o.id)}" class="status-select">${statuses.map(([v,l])=>`<option value="${v}" ${v===status?'selected':''}>${l}</option>`).join('')}</select><button class="btn save-status">Save status</button><span class="detail save-feedback" aria-live="polite"></span></div></article>`;}).join(''):'<div class="empty">No orders match this search.</div>';
+   $('orders').querySelectorAll('.save-status').forEach(btn=>btn.addEventListener('click',async()=>{const card=btn.closest('.order'),select=card.querySelector('select'),feedback=card.querySelector('.save-feedback');btn.disabled=true;feedback.textContent='Saving…';try{await S.updateOrderStatus(card.dataset.id,select.value);const o=orders.find(x=>x.id===card.dataset.id);if(o)o.status=select.value;$('admin-message').textContent='Order '+(o?.orderId||'')+' status updated successfully.';$('stat-queued').textContent=orders.filter(x=>(x.status||'commission_queued')==='commission_queued').length;$('stat-progress').textContent=orders.filter(x=>['processing','shipped'].includes(x.status)).length;feedback.textContent='Saved';}catch(e){feedback.textContent=e.message||'Could not save';}finally{btn.disabled=false;}}));
+ }
+ function renderCustomers(){ $('customers').innerHTML=users.length?`<table class="customers-table"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>City</th></tr></thead><tbody>${users.map(u=>`<tr><td>${esc(u.name||'—')}</td><td>${esc(u.email||'—')}</td><td>${esc(u.phone||'—')}</td><td>${esc(u.city||'—')}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No customer profiles yet.</div>'; }
+ $('order-search').addEventListener('input',renderOrders);$('status-filter').addEventListener('change',renderOrders);
+ $('logout').addEventListener('click',async()=>{try{await S.logoutUser();}finally{location.href='index.html';}});
+})();
+</script></body></html>

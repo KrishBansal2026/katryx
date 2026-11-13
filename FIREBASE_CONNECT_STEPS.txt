@@ -1,0 +1,19 @@
+ATELIER HIDE — CONNECT YOUR FIREBASE PROJECT
+
+1. Open https://console.firebase.google.com/ and create/select your Firebase project.
+2. Project settings (gear) > General > Your apps > Add app > Web.
+3. Copy the firebaseConfig object shown by Firebase.
+4. Open firebase-config.js and replace the placeholder values in firebaseConfig with your real values.
+   Do not share passwords, service-account JSON files, or private keys.
+5. Authentication > Sign-in method > enable Email/Password.
+6. Firestore Database > Create database.
+7. In Firebase Console > Firestore > Rules, publish the included firestore.rules.
+8. (Optional) If you use Firebase Storage, create the bucket and publish storage.rules.
+9. Run the site through VS Code Live Server or another local HTTP server, not by opening the HTML as file://.
+10. Test create-account, sign-in, sign-out, profile, cart and order flows.
+
+Important:
+- The Firebase Web API key is designed to be present in frontend config; access control comes from Security Rules.
+- Never put Admin SDK service-account credentials in frontend files.
+- This project records orders; it does not process card payments. Add a trusted payment provider/backend before accepting real payments.
+- The app will attempt to connect to Firebase project katryx-ab8ac. Cloud operations still require Email/Password Authentication and Firestore Database to be enabled and the included Firestore rules to be published.
