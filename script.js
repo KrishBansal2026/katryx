@@ -3341,7 +3341,25 @@ function handleAuthStateUpdate(user) {
       loadUserSavedDesignsUI(user.uid);
       loadUserOrdersUI(user.uid);
     }
+
+    // Check if user is owner/admin and reveal Admin tabs/links
+    if (typeof FirebaseService !== 'undefined' && FirebaseService.isCurrentUserAdmin) {
+      FirebaseService.isCurrentUserAdmin().then(isAdmin => {
+        document.querySelectorAll('.admin-only-link').forEach(el => {
+          if (isAdmin) {
+            el.style.display = el.classList.contains('btn') ? 'flex' : (el.classList.contains('mobile-nav-link') ? 'flex' : 'inline-flex');
+          } else {
+            el.style.display = 'none';
+          }
+        });
+      }).catch(() => {});
+    }
   } else {
+    // Hide admin elements for guest/unauthenticated state
+    document.querySelectorAll('.admin-only-link').forEach(el => {
+      el.style.display = 'none';
+    });
+
     // 2. Unauthenticated: Hide storefront, present full-screen Auth Gate
     if (store) store.style.display = 'none';
     if (gate) gate.style.display = 'block';

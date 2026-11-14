@@ -142,6 +142,7 @@
         </a>
         <a href="#leather-guide" class="nav-link">Leather Guide</a>
         <a href="#craftsmanship" class="nav-link">Our Craft</a>
+        <a href="admin.html" class="nav-link admin-only-link" style="display:none; color: var(--color-gold, #c49a45); font-weight: 600;">✦ Owner Dashboard</a>
       </nav>
 
       <!-- Action Controls -->
@@ -183,7 +184,7 @@
   <!-- Mobile Navigation Panel -->
   <div class="mobile-nav-panel" id="mobile-nav" aria-hidden="true">
     <nav class="mobile-nav-links">
-      <a href="login.html" class="mobile-nav-link">Sign In / Create Account <span>→</span></a>
+      <a href="admin.html" class="mobile-nav-link admin-only-link" style="display:none; color: var(--color-gold, #c49a45); font-weight: 600;">✦ Owner Dashboard <span>→</span></a>
       <a href="#collection" class="mobile-nav-link">Featured Collection <span>→</span></a>
       <a href="#custom-studio" class="mobile-nav-link">Custom Monogram Studio <span>→</span></a>
       <a href="#leather-guide" class="mobile-nav-link">Material & Leather Guide <span>→</span></a>
@@ -1565,7 +1566,8 @@
             <p class="account-muted">Loading your commission orders...</p>
           </div>
         </div>
-        <button type="button" class="btn btn-secondary" id="btn-auth-logout" style="margin-top: 18px;">Sign Out</button>
+        <a href="admin.html" class="btn btn-primary admin-only-link" style="display:none; margin-top: 14px; width: 100%; text-align: center; text-decoration: none; justify-content: center; align-items: center; background: #3a2115; color: #fff; letter-spacing: 0.1em; font-size: 13px;">✦ Open Owner Dashboard →</a>
+        <button type="button" class="btn btn-secondary" id="btn-auth-logout" style="margin-top: 12px;">Sign Out</button>
       </div>
     </div>
   </section>
