@@ -1,7 +1,3 @@
-
-
-
-
 /**
  * KATRYX — Main Application Script
  * Handmade Leather Goods & Custom Monogram Studio
@@ -1926,7 +1922,7 @@ function openCheckoutModal() {
     ? FirebaseService.getCurrentUser() : null;
   if (!signedInUser) {
     showToast('Please sign in to place your order.');
-    openAccountModal('login');
+    window.location.href = 'login.html?redirect=checkout';
     return;
   }
 
@@ -3272,21 +3268,6 @@ function switchAuthTab(tab) {
 function handleAuthStateUpdate(user) {
   if (typeof document === 'undefined') return;
 
-  // The single-page login gate is shown until Firebase confirms an authenticated user.
-  const authGate = document.getElementById('account-modal');
-  const authBackdrop = document.getElementById('modal-backdrop');
-  if (user) {
-    document.body.classList.remove('auth-gate-active');
-    if (authGate) authGate.classList.remove('is-open');
-    if (authBackdrop) authBackdrop.classList.remove('is-active');
-    document.body.style.overflow = '';
-  } else {
-    document.body.classList.add('auth-gate-active');
-    if (authGate) authGate.classList.add('is-open');
-    if (authBackdrop) authBackdrop.classList.add('is-active');
-    document.body.style.overflow = 'hidden';
-  }
-
   const dot = document.getElementById('user-status-dot');
   const nameElem = document.getElementById('account-user-name');
   const emailElem = document.getElementById('account-user-email');
@@ -3719,15 +3700,6 @@ async function syncProductsFromFirestore() {
 function initFirebaseIntegration() {
   if (typeof document === 'undefined') return;
 
-  // Initialize the service before subscribing; the old standalone login page did this itself.
-  if (typeof FirebaseService !== 'undefined' && FirebaseService.init) {
-    try { FirebaseService.init(); }
-    catch (error) { console.error('Firebase initialization failed:', error); }
-  }
-
-  // Show the sign-in form by default inside the full-page auth gate.
-  switchAuthTab('login');
-
   // 1. Subscribe to Auth state changes
   if (typeof FirebaseService !== 'undefined' && FirebaseService.onAuthChange) {
     FirebaseService.onAuthChange(handleAuthStateUpdate);
@@ -3737,7 +3709,7 @@ function initFirebaseIntegration() {
   const accountTrigger = document.getElementById('account-trigger');
   const accountCloseBtn = document.getElementById('account-close-btn');
   if (accountTrigger) {
-    accountTrigger.addEventListener('click', () => { if (FirebaseService.getCurrentUser && FirebaseService.getCurrentUser()) window.location.href = 'profile.html'; else openAccountModal('login'); });
+    accountTrigger.addEventListener('click', () => { window.location.href = (FirebaseService.getCurrentUser && FirebaseService.getCurrentUser()) ? 'profile.html' : 'login.html'; });
   }
   if (accountCloseBtn) {
     accountCloseBtn.addEventListener('click', closeAccountModal);
@@ -3930,7 +3902,3 @@ if (typeof module !== 'undefined' && module.exports) {
     initFirebaseIntegration
   };
 }
-
-
-
-
