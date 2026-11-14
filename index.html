@@ -1,3 +1,7 @@
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,8 +25,38 @@
   <script src="firebase-config.js" defer></script>
   <script src="firebase-service.js" defer></script>
   <script src="script.js" defer></script>
+
+  <style id="katryx-single-page-auth-styles">
+    /* KATRYX single-page sign-in gate: homepage stays behind auth until Firebase confirms a user. */
+    body.auth-gate-active { overflow: hidden !important; }
+    body.auth-gate-active .katryx-auth-gate {
+      position: fixed; inset: 0; z-index: 1301; width: 100%; height: 100%; max-height: 100%;
+      overflow-y: auto; padding: clamp(22px, 5vw, 64px); border: 0; border-radius: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, rgba(35,18,10,.20), rgba(35,18,10,.76)),
+        url("assets/images/hero-campaign.svg") center/cover fixed;
+      opacity: 1; visibility: visible; transform: none; box-shadow: none;
+    }
+    body.auth-gate-active .katryx-auth-gate .account-modal-inner {
+      width: min(100%, 460px); max-height: none; overflow: visible; padding: clamp(26px, 4vw, 46px);
+      background: #fffdf9; color: #25150f; box-shadow: 0 24px 80px rgba(0,0,0,.24);
+    }
+    body.auth-gate-active .katryx-auth-gate .section-meta { text-align: center; letter-spacing: .28em; }
+    body.auth-gate-active .katryx-auth-gate h2,
+    body.auth-gate-active .katryx-auth-gate .account-intro { text-align: center; }
+    body.auth-gate-active .katryx-auth-gate .account-intro { color: #82766d; }
+    body.auth-gate-active .katryx-auth-gate .modal-close-btn { display: none !important; }
+    body.auth-gate-active #modal-backdrop { display: none !important; }
+    body.auth-gate-active .katryx-auth-gate .auth-form { display: flex; flex-direction: column; gap: .55rem; }
+    body.auth-gate-active .katryx-auth-gate .auth-form input { background: #fff; color: #25150f; }
+    body.auth-gate-active .katryx-auth-gate .auth-error { min-height: 1em; }
+    @media (max-width: 600px) {
+      body.auth-gate-active .katryx-auth-gate { padding: 14px; background-attachment: scroll; }
+      body.auth-gate-active .katryx-auth-gate .account-modal-inner { padding: 25px 20px; }
+    }
+  </style>
 </head>
-<body>
+<body class="auth-gate-active">
   <!-- Accessibility: Skip Link -->
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
@@ -95,7 +129,7 @@
   <!-- Mobile Navigation Panel -->
   <div class="mobile-nav-panel" id="mobile-nav" aria-hidden="true">
     <nav class="mobile-nav-links">
-      <a href="login.html" class="mobile-nav-link">Sign In / Create Account <span>→</span></a>
+      <a href="#account-modal" class="mobile-nav-link" onclick="openAccountModal('login'); return false;">Sign In / Create Account <span>→</span></a>
       <a href="#collection" class="mobile-nav-link">Featured Collection <span>→</span></a>
       <a href="#custom-studio" class="mobile-nav-link">Custom Monogram Studio <span>→</span></a>
       <a href="#leather-guide" class="mobile-nav-link">Material & Leather Guide <span>→</span></a>
@@ -1259,7 +1293,7 @@
   </footer>
 
   <!-- Modal Backdrop -->
-  <div class="modal-backdrop" id="modal-backdrop" aria-hidden="true"></div>
+  <div class="modal-backdrop is-active" id="modal-backdrop" aria-hidden="true"></div>
 
   <!-- Shopping Bag Drawer -->
   <aside class="cart-drawer" id="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping Bag">
@@ -1412,7 +1446,7 @@
   </div>
 
   <!-- Account sign-in / registration modal -->
-  <section class="account-modal" id="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-modal-title" aria-label="Katryx account">
+  <section class="account-modal katryx-auth-gate is-open" id="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-modal-title" aria-label="Katryx account">
     <button type="button" class="modal-close-btn" id="account-close-btn" aria-label="Close account">×</button>
     <div class="account-modal-inner">
       <div class="section-meta">KATRYX MEMBERS</div>
@@ -1447,3 +1481,7 @@
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
 </body>
 </html>
+
+
+
+
