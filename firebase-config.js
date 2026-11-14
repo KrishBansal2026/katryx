@@ -174,6 +174,7 @@ function initLocalFallbackAdapter() {
       authListeners.forEach(fn => fn(userObj));
       return { user: userObj };
     },
+    setPersistence: async () => {},
     signOut: async () => {
       mockAuth.currentUser = null;
       localStorage.removeItem(STORAGE_CURRENT_USER);

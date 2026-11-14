@@ -31,60 +31,9 @@ const FirebaseService = (function () {
     });
   }
 
-  // Cross-tab synchronization bus via BroadcastChannel and localStorage events
-  let syncChannel = null;
-  if (typeof window !== 'undefined' && typeof window.BroadcastChannel === 'function') {
-    try {
-      syncChannel = new window.BroadcastChannel('katryx_auth_sync');
-      syncChannel.onmessage = (event) => {
-        handleCrossTabAuthEvent(event.data);
-      };
-    } catch (e) {
-      console.warn('BroadcastChannel not available:', e.message);
-    }
-  }
-
-  if (typeof window !== 'undefined' && window.addEventListener) {
-    window.addEventListener('storage', (event) => {
-      if (event.key === 'katryx_auth_sync_event' && event.newValue) {
-        try {
-          const data = JSON.parse(event.newValue);
-          handleCrossTabAuthEvent(data);
-        } catch (e) {}
-      }
-    });
-  }
-
+  // In SESSION persistence mode, tabs operate independently (each tab maintains its own isolated session).
   function broadcastAuthEvent(type, data = {}) {
-    const msg = { type, timestamp: Date.now(), ...data };
-    if (syncChannel) {
-      try { syncChannel.postMessage(msg); } catch (e) {}
-    }
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        localStorage.setItem('katryx_auth_sync_event', JSON.stringify(msg));
-      } catch (e) {}
-    }
-  }
-
-  function handleCrossTabAuthEvent(data) {
-    if (!data || !data.type) return;
-    if (data.type === 'LOGOUT') {
-      if (currentUser !== null) {
-        currentUser = null;
-        notifySubscribers(null);
-      }
-    } else if (data.type === 'LOGIN') {
-      if (auth && auth.currentUser) {
-        currentUser = auth.currentUser;
-        getUserProfile(currentUser.uid).then(profile => {
-          if (profile) currentUser.profileData = profile;
-          notifySubscribers(currentUser);
-        }).catch(() => {
-          notifySubscribers(currentUser);
-        });
-      }
-    }
+    // Dormant in SESSION mode to allow multi-user testing across different tabs.
   }
 
   /**
@@ -113,6 +62,13 @@ const FirebaseService = (function () {
       }
     } else {
       console.warn('initFirebaseApp not found. Ensure firebase-config.js is loaded.');
+    }
+
+    // Configure SESSION persistence so each browser tab maintains its own independent session
+    if (auth && auth.setPersistence && typeof firebase !== 'undefined' && firebase.auth && firebase.auth.Auth && firebase.auth.Auth.Persistence) {
+      auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch((err) => {
+        console.warn('Session persistence setup notice:', err.message);
+      });
     }
 
     // Bind auth state observer once
@@ -155,6 +111,15 @@ const FirebaseService = (function () {
       throw new Error('Password must be at least 6 characters long.');
     }
 
+    // Ensure session persistence is active for this tab
+    if (auth && auth.setPersistence && typeof firebase !== 'undefined' && firebase.auth && firebase.auth.Auth && firebase.auth.Auth.Persistence) {
+      try {
+        await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+      } catch (pErr) {
+        console.warn('Could not set SESSION persistence:', pErr.message);
+      }
+    }
+
     // 1. Create Firebase Auth user
     const userCredential = await auth.createUserWithEmailAndPassword(email.trim(), password);
     const user = userCredential.user;
@@ -194,6 +159,16 @@ const FirebaseService = (function () {
     if (!email || !password) {
       throw new Error('Please enter both your email address and password.');
     }
+
+    // Ensure session persistence is active for this tab
+    if (auth && auth.setPersistence && typeof firebase !== 'undefined' && firebase.auth && firebase.auth.Auth && firebase.auth.Auth.Persistence) {
+      try {
+        await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+      } catch (pErr) {
+        console.warn('Could not set SESSION persistence:', pErr.message);
+      }
+    }
+
     const userCredential = await auth.signInWithEmailAndPassword(email.trim(), password);
     const user = userCredential.user;
 
