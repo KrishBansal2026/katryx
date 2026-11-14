@@ -77,7 +77,7 @@ The application uses the official **Firebase Web SDK (v10 compat)** loaded via G
 
 ```javascript
 const firebaseConfig = {
-  apiKey: "AsiazyDemoAtelierHideKey2026LuxuryCraft",
+  apiKey: "AIzaSyCegHkQLTGDKRH7sLrJmIYkp4A4cm9iZ0w",
   authDomain: "katryx-luxury.firebaseapp.com",
   projectId: "katryx-luxury",
   storageBucket: "katryx-luxury.appspot.com",
