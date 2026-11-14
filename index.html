@@ -26,6 +26,93 @@
   <!-- Accessibility: Skip Link -->
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
+  <!-- 1. Full-Screen Elegant Auth State Resolution Loader -->
+  <div class="katryx-auth-loader" id="katryx-auth-loader" aria-live="polite" aria-label="Verifying credentials">
+    <div class="auth-loader-content">
+      <div class="auth-loader-crest">KATRYX</div>
+      <div class="auth-loader-kicker">Handcrafted Leather Goods • Atelier Bengaluru</div>
+      <div class="auth-loader-spinner" aria-hidden="true"></div>
+      <p class="auth-loader-text">Connecting to Secure Atelier...</p>
+    </div>
+  </div>
+
+  <!-- 2. Full-Screen Luxury Split-Screen Auth Gate (shown when unauthenticated) -->
+  <div class="katryx-auth-gate" id="katryx-auth-gate" style="display:none;" role="region" aria-label="Atelier Sign In and Registration">
+    <main class="auth-shell">
+      <!-- Art & Brand Story Side -->
+      <section class="auth-art" aria-label="Katryx leather collection">
+        <div class="auth-art-overlay"></div>
+        <div class="auth-art-content">
+          <div class="auth-art-tag">ATELIER ARCHIVE • BENGALURU</div>
+          <h1>Crafted to be yours.</h1>
+          <p>Discover considered leather goods, made with character and personalised with your story.</p>
+          <div class="auth-art-benchmarks">
+            <span>✦ Tuscan Full-Grain Hide</span>
+            <span>◈ Lifetime Saddle Stitch</span>
+            <span>❖ Sand-Cast Brass</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Interactive Sign In / Register Card Side -->
+      <section class="auth-panel">
+        <div class="auth-card">
+          <div class="auth-brand">KATRYX</div>
+          <div class="auth-kicker">Leather Goods • Made to Last</div>
+          <h2 id="gate-form-heading">Welcome back</h2>
+          <p class="auth-lead" id="gate-form-lead">Sign in to access your atelier account, saved designs and orders.</p>
+
+          <div class="auth-tabs" role="tablist">
+            <button type="button" class="auth-tab-btn is-active" id="gate-tab-login" role="tab" aria-selected="true">Sign In</button>
+            <button type="button" class="auth-tab-btn" id="gate-tab-register" role="tab" aria-selected="false">Create Account</button>
+          </div>
+
+          <!-- Sign In Form -->
+          <form class="auth-gate-form" id="gate-login-form" novalidate>
+            <div class="auth-field-group">
+              <label for="gate-login-email">Email address</label>
+              <input id="gate-login-email" type="email" autocomplete="email" placeholder="you@example.com" required spellcheck="false">
+            </div>
+            <div class="auth-field-group">
+              <label for="gate-login-password">Password</label>
+              <input id="gate-login-password" type="password" autocomplete="current-password" placeholder="Your password" required minlength="6">
+            </div>
+            <div class="auth-error-box" id="gate-login-error" role="alert" style="display:none;"></div>
+            <button class="btn btn-primary auth-submit-btn" id="btn-gate-login" type="submit">
+              <span class="btn-label">Sign In</span>
+              <span class="btn-spinner" aria-hidden="true" style="display:none;"></span>
+            </button>
+          </form>
+
+          <!-- Create Account Form -->
+          <form class="auth-gate-form" id="gate-register-form" style="display:none;" novalidate>
+            <div class="auth-field-group">
+              <label for="gate-register-name">Full name</label>
+              <input id="gate-register-name" type="text" autocomplete="name" placeholder="Your full name" required minlength="2">
+            </div>
+            <div class="auth-field-group">
+              <label for="gate-register-email">Email address</label>
+              <input id="gate-register-email" type="email" autocomplete="email" placeholder="you@example.com" required spellcheck="false">
+            </div>
+            <div class="auth-field-group">
+              <label for="gate-register-password">Password</label>
+              <input id="gate-register-password" type="password" autocomplete="new-password" placeholder="At least 6 characters" required minlength="6">
+            </div>
+            <div class="auth-error-box" id="gate-register-error" role="alert" style="display:none;"></div>
+            <button class="btn btn-primary auth-submit-btn" id="btn-gate-register" type="submit">
+              <span class="btn-label">Create Account</span>
+              <span class="btn-spinner" aria-hidden="true" style="display:none;"></span>
+            </button>
+          </form>
+
+          <div class="auth-foot">SECURE ATELIER ACCESS • KATRYX ENCRYPTED</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 3. KATRYX STORE EXPERIENCE (Protected — displayed once Firebase confirms user) -->
+  <div id="katryx-store-app" style="display:none;">
   <!-- A. Announcement Strip -->
   <aside class="announcement-bar" id="announcement-bar" aria-label="Atelier Announcement">
     <div class="announcement-content">
@@ -70,6 +157,7 @@
         <!-- Account / Sign In Trigger -->
         <button type="button" class="header-btn account-trigger" id="account-trigger" aria-label="Sign in or open account" title="Account">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+          <span class="user-status-dot" id="user-status-dot" aria-hidden="true"></span>
         </button>
 
         <!-- Shopping Bag Trigger -->
@@ -212,6 +300,8 @@
         <div class="hero-visual hero-static-visual motion-enter-3" id="hero-visual">
           <div class="hero-image-wrap">
             <img src="assets/images/hero-campaign.webp" alt="Katryx structured leather handbag in Heritage Cognac" width="800" height="600" loading="eager" decoding="async">
+            <canvas id="hero-3d-canvas" class="hero-3d-canvas" style="display:none;" aria-hidden="true"></canvas>
+            <div id="hero-3d-container" style="display:none;" aria-hidden="true"></div>
           </div>
           <div class="hero-provenance-caption">
             <div class="provenance-top-row">
@@ -309,7 +399,7 @@
             <div class="showcase-visual-col">
               <div class="showcase-media-frame">
                 <span class="showcase-floating-badge">Archive No. 01 • Travel Luggage</span>
-                <img src="assets/images/product-weekender.svg" alt="The Weekender No. 01 Duffel Bag" width="700" height="500" loading="lazy" class="showcase-img">
+                <img src="https://media.istockphoto.com/id/1257455876/photo/duffel-bag-travel-case-leather-holdall-valise-fashion-modern.jpg?s=2048x2048&w=is&k=20&c=NkG_Te02ika_YDJ0EotB0yaTiDNinVAxmuZZUIr48uc=" alt="The Weekender No. 01 Duffel Bag" width="700" height="500" loading="lazy" class="showcase-img">
                 <div class="showcase-media-overlay"></div>
               </div>
             </div>
@@ -603,7 +693,15 @@
                 <p class="studio-model-desc" id="preview-model-desc">A masterwork structured top-handle handbag in vegetable-tanned steerhide with hand-molded gussets, rolled handle, and sand-cast solid brass turn-lock clasp.</p>
               </div>
 
-
+              <div class="visualizer-actions" style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" class="btn-toggle-studio-3d" id="btn-toggle-studio-3d" aria-label="Toggle 3D Orbit View">
+                  <span>3D Orbit View</span>
+                </button>
+                <button type="button" class="btn-reset-studio-camera" id="btn-reset-studio-camera" aria-label="Reset Camera View" style="display:none;">
+                  <span>Reset View</span>
+                </button>
+                <span class="studio-view-indicator-text" id="studio-view-indicator-text" style="display:none;">Studio Atelier Preview</span>
+              </div>
             </div>
 
             <!-- Canvas Stage: Interactive 3D WebGL Studio Workbench -->
@@ -834,6 +932,12 @@
                 <button type="button" class="btn btn-primary btn-add-studio" id="btn-add-custom-to-cart">
                   <span>Add Bespoke Piece to Bag</span>
                   <span>→</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-save-studio" id="btn-save-custom-design" title="Save this bespoke piece to your cloud account">
+                  <span>✦ Save Bespoke Design</span>
+                </button>
+                <button type="button" class="btn-reset-studio" id="btn-view-saved-designs" title="View your saved custom designs">
+                  View Saved Designs
                 </button>
                 <button type="button" class="btn-reset-studio" id="btn-reset-studio">
                   Reset Studio Configuration
@@ -1229,6 +1333,7 @@
           <li><a href="#craftsmanship" class="footer-link">Lifetime Stitch Guarantee</a></li>
           <li><a href="#custom-studio" class="footer-link">Bespoke Monogramming</a></li>
           <li><a href="#announcement-bar" class="footer-link">Domestic Shipping Info</a></li>
+          <li><a href="admin.html" class="footer-link">Owner Dashboard</a></li>
         </ul>
       </div>
 
@@ -1435,15 +1540,38 @@
         </form>
       </div>
       <div id="auth-authenticated-view" style="display:none">
-        <div class="account-avatar" id="account-avatar-crest">AH</div><h3 id="account-user-name">Welcome</h3><p id="account-user-email"></p>
-        <div class="account-tabs"><button type="button" id="subtab-btn-designs" class="is-active">Saved Designs</button><button type="button" id="subtab-btn-orders">Orders</button></div>
-        <div id="account-panel-designs"></div><div id="account-panel-orders" style="display:none"></div>
-        <button type="button" class="btn btn-secondary" id="btn-auth-logout">Sign Out</button>
+        <div class="account-avatar" id="account-avatar-crest">AH</div>
+        <h3 id="account-user-name">Welcome</h3>
+        <p id="account-user-email"></p>
+        <div class="account-tabs">
+          <button type="button" id="subtab-btn-designs" class="is-active">Saved Designs</button>
+          <button type="button" id="subtab-btn-orders">Orders</button>
+        </div>
+        <div id="account-panel-designs">
+          <div class="account-panel-header" style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0 8px;">
+            <h4 style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-charcoal, #32190e);">Saved Bespoke Designs</h4>
+            <span class="account-badge" id="saved-designs-count" style="background: var(--color-cognac, #a56b3d); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 11px;">0</span>
+          </div>
+          <div class="account-list" id="saved-designs-list">
+            <p class="account-muted">Loading your bespoke designs...</p>
+          </div>
+        </div>
+        <div id="account-panel-orders" style="display:none">
+          <div class="account-panel-header" style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0 8px;">
+            <h4 style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-charcoal, #32190e);">Commission Order History</h4>
+            <span class="account-badge" id="orders-count" style="background: var(--color-cognac, #a56b3d); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 11px;">0</span>
+          </div>
+          <div class="account-list" id="account-orders-list">
+            <p class="account-muted">Loading your commission orders...</p>
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary" id="btn-auth-logout" style="margin-top: 18px;">Sign Out</button>
       </div>
     </div>
   </section>
 
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
+  </div><!-- /#katryx-store-app -->
 </body>
 </html>

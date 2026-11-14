@@ -17,13 +17,18 @@ const FirebaseService = (function () {
   // Internal service references
   let auth = null;
   let db = null;
-  let currentUser = null;
+  let currentUser = undefined; // undefined: auth state pending; null: unauthenticated; object: authenticated
+  let isInitialized = false;
   const authStateSubscribers = [];
 
   /**
    * Initializes the service by obtaining Firebase instances from firebase-config.js
    */
   function init(customInstances) {
+    if (isInitialized && !customInstances && auth && db) {
+      return { auth, db };
+    }
+
     if (customInstances && customInstances.auth && customInstances.db) {
       auth = customInstances.auth;
       db = customInstances.db;
@@ -44,8 +49,8 @@ const FirebaseService = (function () {
       console.warn('initFirebaseApp not found. Ensure firebase-config.js is loaded.');
     }
 
-    // Bind auth state observer
-    if (auth && auth.onAuthStateChanged) {
+    // Bind auth state observer once
+    if (auth && auth.onAuthStateChanged && !isInitialized) {
       auth.onAuthStateChanged(async (user) => {
         currentUser = user;
         if (user) {
@@ -68,6 +73,7 @@ const FirebaseService = (function () {
           }
         });
       });
+      isInitialized = true;
     }
 
     return { auth, db };
@@ -139,6 +145,13 @@ const FirebaseService = (function () {
       await auth.signOut();
     }
     currentUser = null;
+    authStateSubscribers.forEach((cb) => {
+      try {
+        cb(null);
+      } catch (err) {
+        console.error('Logout subscriber error:', err);
+      }
+    });
   }
 
   /**
@@ -158,12 +171,30 @@ const FirebaseService = (function () {
    */
   function onAuthChange(callback) {
     if (typeof callback === 'function') {
-      authStateSubscribers.push(callback);
+      if (!authStateSubscribers.includes(callback)) {
+        authStateSubscribers.push(callback);
+      }
       // If user already determined, invoke immediately
       if (currentUser !== undefined) {
-        callback(currentUser);
+        try {
+          callback(currentUser);
+        } catch (err) {
+          console.error('Auth state subscriber immediate error:', err);
+        }
       }
+      return () => {
+        const idx = authStateSubscribers.indexOf(callback);
+        if (idx > -1) authStateSubscribers.splice(idx, 1);
+      };
     }
+    return () => {};
+  }
+
+  /**
+   * Returns whether auth state resolution has completed.
+   */
+  function isAuthReady() {
+    return currentUser !== undefined;
   }
 
   /**
@@ -437,7 +468,7 @@ const FirebaseService = (function () {
     if (!user || !user.uid) throw new Error('Please sign in before placing an order.');
 
     const orderRef = db.collection('orders').doc();
-    const orderId = `KX-${Date.now().toString(36).toUpperCase()}`;
+    const orderId = orderData.orderId || `KX-${Date.now().toString(36).toUpperCase()}`;
 
     const payload = {
       orderId: orderId,
@@ -595,6 +626,7 @@ const FirebaseService = (function () {
     logoutUser,
     onAuthChange,
     getCurrentUser,
+    isAuthReady,
     getUserProfile,
     updateUserProfile,
     isCurrentUserAdmin,

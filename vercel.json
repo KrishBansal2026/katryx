@@ -1,15 +1,26 @@
-
 {
-  "redirects": [
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "routes": [
     {
-      "source": "/",
-      "destination": "/login.html",
-      "permanent": false
+      "handle": "filesystem"
     },
     {
-      "source": "/index.html",
-      "destination": "/login.html",
-      "permanent": false
+      "src": "/admin",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/profile",
+      "dest": "/profile.html"
+    },
+    {
+      "src": "/login",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "status": 404,
+      "dest": "/404.html"
     }
   ]
 }

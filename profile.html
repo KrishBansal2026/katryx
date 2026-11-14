@@ -16,9 +16,9 @@
   <script src="firebase-service.js"></script>
 <script>
 (async function(){
- const S=window.FirebaseService; if(!S){location.href='login.html';return;} 
+ const S=window.FirebaseService; if(!S){location.href='index.html';return;} 
  const wait=()=>new Promise(resolve=>{let off=S.onAuthChange(u=>{off&&off();resolve(u)});setTimeout(()=>resolve(S.getCurrentUser()),1200)});
- const user=await wait(); if(!user){location.href='login.html';return;}
+ const user=await wait(); if(!user){location.href='index.html';return;}
  const $=id=>document.getElementById(id);
  const profile=await S.getUserProfile(user.uid)||{};
  $('name').value=profile.name||user.displayName||'';$('email').value=user.email||'';

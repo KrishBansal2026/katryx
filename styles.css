@@ -4847,31 +4847,370 @@ ul, ol {
   object-fit: contain;
 }
 
-/* Remove the empty left-side customizer column completely.
-   The existing controls now occupy the full workstation width. */
-#custom-studio .studio-workbench {
-  display: block !important;
-  grid-template-columns: minmax(0, 1fr) !important;
-  width: 100%;
-  max-width: 100%;
+/* Responsive Custom Studio Workstation styling */
+@media (max-width: 992px) {
+  #custom-studio .studio-workbench {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  #custom-studio .studio-visualizer-card {
+    position: static;
+    max-width: 680px;
+    margin: 0 auto;
+  }
 }
-#custom-studio .studio-visualizer-card {
-  display: none !important;
-}
-#custom-studio .studio-controls {
+
+/* ==========================================================================
+   20. FULLSCREEN KATRYX AUTHENTICATION GATE & RESOLUTION LOADER
+   ========================================================================== */
+
+/* A. Elegant Fullscreen Auth Resolution Loader */
+.katryx-auth-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: radial-gradient(circle at center, #2e1a10 0%, #170d08 100%);
   display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 1120px;
-  min-width: 0;
-  margin: 0 auto;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
 }
-#custom-studio .studio-step-block {
-  width: 100%;
-  min-width: 0;
+
+.katryx-auth-loader.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
-#custom-studio .product-picker-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+
+.auth-loader-content {
+  text-align: center;
+  padding: 2rem;
+  max-width: 440px;
+}
+
+.auth-loader-crest {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #f7ecd9;
+  margin-bottom: 0.5rem;
+}
+
+.auth-loader-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-cognac, #a56b3d);
+  margin-bottom: 2rem;
+}
+
+.auth-loader-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 1.5rem;
+  border: 2px solid rgba(165, 107, 61, 0.25);
+  border-top-color: var(--color-gold, #cda365);
+  border-radius: 50%;
+  animation: authSpin 0.9s linear infinite;
+}
+
+.auth-loader-text {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  color: #a89a8c;
+}
+
+@keyframes authSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* B. Full-Screen Luxury Split-Screen Auth Gate */
+.katryx-auth-gate {
+  min-height: 100vh;
+  width: 100%;
+  background: #f4eee7;
+  color: #24140e;
+}
+
+.katryx-auth-gate .auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+}
+
+.katryx-auth-gate .auth-art {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(135deg, rgba(35, 18, 10, 0.25), rgba(28, 14, 8, 0.82)),
+    url("assets/images/hero-campaign.webp") center/cover no-repeat;
+  display: flex;
+  align-items: flex-end;
+  padding: clamp(32px, 5.5vw, 84px);
+  color: #ffffff;
+}
+
+.katryx-auth-gate .auth-art-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, transparent 20%, rgba(20, 10, 5, 0.4) 100%);
+  pointer-events: none;
+}
+
+.katryx-auth-gate .auth-art-content {
+  position: relative;
+  z-index: 2;
+  max-width: 600px;
+}
+
+.katryx-auth-gate .auth-art-tag {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: #dfcaa7;
+  border: 1px solid rgba(223, 202, 167, 0.35);
+  padding: 4px 10px;
+  margin-bottom: 1.25rem;
+  border-radius: 2px;
+}
+
+.katryx-auth-gate .auth-art h1 {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-weight: 600;
+  font-size: clamp(2.5rem, 4.5vw, 4.25rem);
+  line-height: 1.05;
+  margin: 0 0 1rem;
+  color: #fdfbf7;
+}
+
+.katryx-auth-gate .auth-art p {
+  font-size: clamp(0.95rem, 1.2vw, 1.08rem);
+  line-height: 1.65;
+  color: #e5d7c8;
+  max-width: 480px;
+  margin-bottom: 2rem;
+}
+
+.katryx-auth-gate .auth-art-benchmarks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #cbb9a3;
+  border-top: 1px solid rgba(223, 202, 167, 0.2);
+  padding-top: 1.25rem;
+}
+
+.katryx-auth-gate .auth-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 4vw, 48px) 24px;
+  background: #fbf8f3;
+}
+
+.katryx-auth-gate .auth-card {
+  width: min(100%, 460px);
+  background: #ffffff;
+  padding: clamp(28px, 4vw, 44px);
+  border: 1px solid #e7ded3;
+  box-shadow: 0 24px 70px rgba(35, 18, 10, 0.08);
+}
+
+.katryx-auth-gate .auth-brand {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--color-espresso, #23120a);
+}
+
+.katryx-auth-gate .auth-kicker {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--color-cognac, #a56b3d);
+  margin: 6px 0 24px;
+}
+
+.katryx-auth-gate h2 {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-weight: 600;
+  font-size: 32px;
+  text-align: center;
+  margin: 0 0 6px;
+  color: #1f140e;
+}
+
+.katryx-auth-gate .auth-lead {
+  text-align: center;
+  color: #7b6d62;
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0 0 22px;
+}
+
+.katryx-auth-gate .auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid #e6dbcf;
+  margin-bottom: 22px;
+}
+
+.katryx-auth-gate .auth-tab-btn {
+  border: 0;
+  background: none;
+  padding: 12px 8px;
+  color: #8c8075;
+  font-family: var(--font-sans, 'Plus Jakarta Sans', sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all var(--transition-fast, 0.2s ease);
+}
+
+.katryx-auth-gate .auth-tab-btn.is-active {
+  color: var(--color-espresso, #24140e);
+  border-color: var(--color-cognac, #a56b3d);
+}
+
+.katryx-auth-gate .auth-gate-form {
+  display: grid;
+  gap: 12px;
+}
+
+.katryx-auth-gate .auth-field-group {
+  display: grid;
+  gap: 5px;
+}
+
+.katryx-auth-gate label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64554b;
+}
+
+.katryx-auth-gate input {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid #dcd1c4;
+  background: #ffffff;
+  color: #24140e;
+  font-family: var(--font-sans, 'Plus Jakarta Sans', sans-serif);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast, 0.2s ease), box-shadow var(--transition-fast, 0.2s ease);
+}
+
+.katryx-auth-gate input:focus {
+  border-color: var(--color-cognac, #a56b3d);
+  box-shadow: 0 0 0 3px rgba(165, 107, 61, 0.14);
+}
+
+.katryx-auth-gate .auth-error-box {
+  background: rgba(184, 40, 40, 0.08);
+  border: 1px solid rgba(184, 40, 40, 0.25);
+  color: #a82020;
+  padding: 9px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  border-radius: 2px;
+  text-align: left;
+}
+
+.katryx-auth-gate .auth-submit-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px;
+  background: #27160e;
+  color: #ffffff;
+  border: 1px solid #27160e;
+  font-family: var(--font-sans, 'Plus Jakarta Sans', sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background var(--transition-fast, 0.2s ease), border-color var(--transition-fast, 0.2s ease);
+}
+
+.katryx-auth-gate .auth-submit-btn:hover:not(:disabled) {
+  background: var(--color-cognac, #a56b3d);
+  border-color: var(--color-cognac, #a56b3d);
+}
+
+.katryx-auth-gate .auth-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.katryx-auth-gate .auth-foot {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9f9185;
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid #ece3d8;
+}
+
+@media (max-width: 850px) {
+  .katryx-auth-gate .auth-shell {
+    grid-template-columns: 1fr;
+  }
+  .katryx-auth-gate .auth-art {
+    min-height: 38vh;
+    padding: 32px 20px;
+  }
+  .katryx-auth-gate .auth-art h1 {
+    font-size: 2.2rem;
+  }
+  .katryx-auth-gate .auth-panel {
+    padding: 28px 16px;
+  }
+  .katryx-auth-gate .auth-card {
+    box-shadow: none;
+    border: none;
+    padding: 20px 0;
+    background: transparent;
+  }
+}
+
+/* User status active indicator in header */
+.header-btn.account-trigger {
+  position: relative;
+}
+.user-status-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2ebd6a;
+  border: 1.5px solid #ffffff;
+  display: none;
+}
+.user-status-dot.is-active {
+  display: block;
 }
 
 /* Avoid expensive decorative animation on smaller / reduced-motion devices. */

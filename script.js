@@ -16,7 +16,7 @@ const PRODUCTS_DATA = {
     name: 'The Structured Handbag',
     category: 'Handbags & Totes',
     filterTag: 'Bags',
-    basePrice: 12900,
+    basePrice: 28500,
     image: 'assets/images/product-handbag.webp',
     alt: 'The Atelier Structured Handbag with Top Handle and Turn-Lock Clasp',
     shortDesc: 'A masterwork structured top-handle handbag in vegetable-tanned steerhide with hand-molded gussets, rolled handle, and sand-cast solid brass turn-lock clasp.',
@@ -36,7 +36,7 @@ const PRODUCTS_DATA = {
     name: 'The Everyday Bifold',
     category: 'Small Leather Goods',
     filterTag: 'Wallets',
-    basePrice: 2499,
+    basePrice: 4800,
     image: 'assets/images/product-bifold.svg',
     alt: 'The Everyday Bifold in Tuscan Tan Leather',
     shortDesc: 'Six card slots, dual receipt pockets, and a full-length cash compartment folded from a single continuous piece of vegetable-tanned hide.',
@@ -56,7 +56,7 @@ const PRODUCTS_DATA = {
     name: 'The Field Messenger',
     category: 'Satchels & Work Bags',
     filterTag: 'Bags',
-    basePrice: 8999,
+    basePrice: 18500,
     image: 'assets/images/product-messenger.webp',
     alt: 'The Field Messenger Laptop Bag in Pull-Up Cognac',
     shortDesc: 'Designed for modern transit. Accommodates a 15-inch laptop with reinforced solid brass hardware and an adjustable hand-beveled shoulder strap.',
@@ -76,7 +76,7 @@ const PRODUCTS_DATA = {
     name: 'The Passport Companion',
     category: 'Travel Accessories',
     filterTag: 'Travel',
-    basePrice: 1799,
+    basePrice: 3200,
     image: 'assets/images/product-passport.svg',
     alt: 'The Passport Companion Travel Folio',
     shortDesc: 'A slim, protective bifold folio crafted to house your passport, boarding passes, SIM card ejector tool, and currency with zero bulk.',
@@ -96,7 +96,7 @@ const PRODUCTS_DATA = {
     name: 'The Weekender No. 01',
     category: 'Travel & Luggage',
     filterTag: 'Travel',
-    basePrice: 14999,
+    basePrice: 26000,
     image: 'assets/images/product-weekender.webp',
     alt: 'The Weekender No. 01 Duffel Bag with Monogram Tag',
     shortDesc: 'Our flagship duffel bag. Hand-hammered copper rivets, heavy-gauge YKK solid brass zipper, and an unlined full-grain interior that breathes.',
@@ -3263,10 +3263,44 @@ function switchAuthTab(tab) {
 }
 
 /**
- * Handles Firebase Auth state changes
+ * Formats Firebase authentication errors into clear, human-understandable messages
+ */
+function formatAuthError(error) {
+  if (!error) return 'An unexpected error occurred. Please try again.';
+  const code = error.code || '';
+  const message = error.message || '';
+
+  if (code === 'auth/invalid-email') return 'Please enter a valid email address.';
+  if (code === 'auth/user-not-found') return 'No KATRYX account found with this email. Please create an account.';
+  if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials') {
+    return 'Incorrect email or password. Please verify your credentials and try again.';
+  }
+  if (code === 'auth/email-already-in-use') return 'An account with this email already exists. Please sign in instead.';
+  if (code === 'auth/weak-password') return 'Password must be at least 6 characters long.';
+  if (code === 'auth/network-request-failed') return 'Network connectivity issue. Please check your internet connection.';
+  if (code === 'auth/too-many-requests') return 'Too many attempts. Access temporarily disabled. Please wait a moment.';
+
+  return message.replace(/^Firebase:\s*/i, '');
+}
+
+/**
+ * Handles Firebase Auth state changes:
+ * - Automatically hides the initial resolution loader
+ * - When authenticated: shows the flagship storefront and hides the Auth Gate
+ * - When unauthenticated: hides the storefront and presents the full-screen Auth Gate
  */
 function handleAuthStateUpdate(user) {
   if (typeof document === 'undefined') return;
+
+  const loader = document.getElementById('katryx-auth-loader');
+  const gate = document.getElementById('katryx-auth-gate');
+  const store = document.getElementById('katryx-store-app');
+
+  // Dismiss initial loader seamlessly
+  if (loader) {
+    loader.classList.add('is-hidden');
+    setTimeout(() => { loader.style.display = 'none'; }, 400);
+  }
 
   const dot = document.getElementById('user-status-dot');
   const nameElem = document.getElementById('account-user-name');
@@ -3276,19 +3310,24 @@ function handleAuthStateUpdate(user) {
   const authView = document.getElementById('auth-authenticated-view');
 
   if (user) {
+    // 1. Authenticated: Reveal storefront, hide Auth Gate
+    if (gate) gate.style.display = 'none';
+    if (store) store.style.display = 'block';
+    document.body.style.overflow = '';
+
     if (dot) dot.classList.add('is-active');
-    const displayName = user.displayName || (user.profileData && user.profileData.name) || user.email.split('@')[0];
+    const displayName = user.displayName || (user.profileData && user.profileData.name) || (user.email ? user.email.split('@')[0] : 'Patron');
     if (nameElem) nameElem.textContent = displayName;
-    if (emailElem) emailElem.textContent = user.email;
+    if (emailElem) emailElem.textContent = user.email || '';
     if (avatarElem) {
       const initials = displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-      avatarElem.textContent = initials || 'AH';
+      avatarElem.textContent = initials || 'KX';
     }
     if (unauthView) unauthView.style.display = 'none';
     if (authView) authView.style.display = 'block';
 
     // Synchronize guest cart with user's cloud cart in Firestore
-    if (typeof FirebaseService !== 'undefined' && FirebaseService.syncGuestCartToUser) {
+    if (typeof FirebaseService !== 'undefined' && FirebaseService.syncGuestCartToUser && user.uid) {
       FirebaseService.syncGuestCartToUser(user.uid, cartItems).then(merged => {
         if (merged && merged.length > 0) {
           cartItems = merged;
@@ -3297,10 +3336,23 @@ function handleAuthStateUpdate(user) {
       }).catch(err => console.warn('Cart sync notice:', err.message));
     }
 
-    // Load designs and orders
-    loadUserSavedDesignsUI(user.uid);
-    loadUserOrdersUI(user.uid);
+    // Load user's saved bespoke designs and orders into account modal
+    if (user.uid) {
+      loadUserSavedDesignsUI(user.uid);
+      loadUserOrdersUI(user.uid);
+    }
   } else {
+    // 2. Unauthenticated: Hide storefront, present full-screen Auth Gate
+    if (store) store.style.display = 'none';
+    if (gate) gate.style.display = 'block';
+
+    // Close any open modals/drawers
+    closeAccountModal();
+    closeCartDrawer();
+    closeProductDetailsModal();
+    closeCheckoutModal();
+    closeSearchModal();
+
     if (dot) dot.classList.remove('is-active');
     if (unauthView) unauthView.style.display = 'block';
     if (authView) authView.style.display = 'none';
@@ -3695,10 +3747,160 @@ async function syncProductsFromFirestore() {
 }
 
 /**
+ * Initializes the full-screen KATRYX Authentication Gate (Sign In & Registration)
+ */
+function initAuthGate() {
+  if (typeof document === 'undefined') return;
+
+  const tabLogin = document.getElementById('gate-tab-login');
+  const tabRegister = document.getElementById('gate-tab-register');
+  const loginForm = document.getElementById('gate-login-form');
+  const registerForm = document.getElementById('gate-register-form');
+  const heading = document.getElementById('gate-form-heading');
+  const lead = document.getElementById('gate-form-lead');
+  const loginError = document.getElementById('gate-login-error');
+  const registerError = document.getElementById('gate-register-error');
+
+  function setMode(mode) {
+    const isReg = mode === 'register';
+    if (tabLogin) {
+      tabLogin.classList.toggle('is-active', !isReg);
+      tabLogin.setAttribute('aria-selected', !isReg ? 'true' : 'false');
+    }
+    if (tabRegister) {
+      tabRegister.classList.toggle('is-active', isReg);
+      tabRegister.setAttribute('aria-selected', isReg ? 'true' : 'false');
+    }
+    if (loginForm) loginForm.style.display = isReg ? 'none' : 'grid';
+    if (registerForm) registerForm.style.display = isReg ? 'grid' : 'none';
+    if (heading) heading.textContent = isReg ? 'Create your account' : 'Welcome back';
+    if (lead) {
+      lead.textContent = isReg
+        ? 'Join KATRYX to save your bespoke designs and track your commissions.'
+        : 'Sign in to access your atelier account, saved designs and orders.';
+    }
+    if (loginError) { loginError.textContent = ''; loginError.style.display = 'none'; }
+    if (registerError) { registerError.textContent = ''; registerError.style.display = 'none'; }
+  }
+
+  if (tabLogin) tabLogin.addEventListener('click', () => setMode('login'));
+  if (tabRegister) tabRegister.addEventListener('click', () => setMode('register'));
+
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const emailInput = document.getElementById('gate-login-email');
+      const passInput = document.getElementById('gate-login-password');
+      const btn = document.getElementById('btn-gate-login');
+      const email = emailInput ? emailInput.value.trim() : '';
+      const password = passInput ? passInput.value : '';
+
+      if (!email || !password) {
+        if (loginError) {
+          loginError.textContent = 'Please enter both your email address and password.';
+          loginError.style.display = 'block';
+        }
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        const spinner = btn.querySelector('.btn-spinner');
+        if (spinner) spinner.style.display = 'inline-block';
+      }
+      if (loginError) { loginError.textContent = ''; loginError.style.display = 'none'; }
+
+      try {
+        if (typeof FirebaseService === 'undefined' || !FirebaseService.loginUser) {
+          throw new Error('Authentication service is not loaded.');
+        }
+        const { user } = await FirebaseService.loginUser(email, password);
+        showToast(`Welcome back to Katryx, ${user.displayName || 'Patron'}!`, true);
+      } catch (err) {
+        if (loginError) {
+          loginError.textContent = formatAuthError(err);
+          loginError.style.display = 'block';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          const spinner = btn.querySelector('.btn-spinner');
+          if (spinner) spinner.style.display = 'none';
+        }
+      }
+    });
+  }
+
+  if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById('gate-register-name');
+      const emailInput = document.getElementById('gate-register-email');
+      const passInput = document.getElementById('gate-register-password');
+      const btn = document.getElementById('btn-gate-register');
+      const name = nameInput ? nameInput.value.trim() : '';
+      const email = emailInput ? emailInput.value.trim() : '';
+      const password = passInput ? passInput.value : '';
+
+      if (!name || name.length < 2) {
+        if (registerError) {
+          registerError.textContent = 'Please enter your full name (at least 2 characters).';
+          registerError.style.display = 'block';
+        }
+        return;
+      }
+      if (!email) {
+        if (registerError) {
+          registerError.textContent = 'Please enter your email address.';
+          registerError.style.display = 'block';
+        }
+        return;
+      }
+      if (!password || password.length < 6) {
+        if (registerError) {
+          registerError.textContent = 'Password must be at least 6 characters long.';
+          registerError.style.display = 'block';
+        }
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        const spinner = btn.querySelector('.btn-spinner');
+        if (spinner) spinner.style.display = 'inline-block';
+      }
+      if (registerError) { registerError.textContent = ''; registerError.style.display = 'none'; }
+
+      try {
+        if (typeof FirebaseService === 'undefined' || !FirebaseService.registerUser) {
+          throw new Error('Authentication service is not loaded.');
+        }
+        const { user } = await FirebaseService.registerUser(name, email, password);
+        showToast(`Welcome to Katryx, ${user.displayName || name}!`, true);
+      } catch (err) {
+        if (registerError) {
+          registerError.textContent = formatAuthError(err);
+          registerError.style.display = 'block';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          const spinner = btn.querySelector('.btn-spinner');
+          if (spinner) spinner.style.display = 'none';
+        }
+      }
+    });
+  }
+}
+
+/**
  * Initializes all Firebase UI controls, Auth forms, and Cloud Studio triggers
  */
 function initFirebaseIntegration() {
   if (typeof document === 'undefined') return;
+
+  // Initialize Auth Gate listeners
+  initAuthGate();
 
   // 1. Subscribe to Auth state changes
   if (typeof FirebaseService !== 'undefined' && FirebaseService.onAuthChange) {
@@ -3709,19 +3911,45 @@ function initFirebaseIntegration() {
   const accountTrigger = document.getElementById('account-trigger');
   const accountCloseBtn = document.getElementById('account-close-btn');
   if (accountTrigger) {
-    accountTrigger.addEventListener('click', () => { window.location.href = (FirebaseService.getCurrentUser && FirebaseService.getCurrentUser()) ? 'profile.html' : 'login.html'; });
+    accountTrigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      const user = (typeof FirebaseService !== 'undefined' && FirebaseService.getCurrentUser) ? FirebaseService.getCurrentUser() : null;
+      if (user) {
+        openAccountModal('account');
+      } else {
+        openAccountModal('login');
+      }
+    });
   }
   if (accountCloseBtn) {
     accountCloseBtn.addEventListener('click', closeAccountModal);
   }
 
-  // 3. Bind Auth Tabs
+  // Bind Mobile Nav Sign In link
+  const mobileNav = document.getElementById('mobile-nav');
+  if (mobileNav) {
+    const firstLink = mobileNav.querySelector('.mobile-nav-link');
+    if (firstLink) {
+      firstLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeMobileNav();
+        const user = (typeof FirebaseService !== 'undefined' && FirebaseService.getCurrentUser) ? FirebaseService.getCurrentUser() : null;
+        if (user) {
+          openAccountModal('account');
+        } else {
+          openAccountModal('login');
+        }
+      });
+    }
+  }
+
+  // 3. Bind In-Modal Auth Tabs
   const tabLogin = document.getElementById('tab-auth-login');
   const tabRegister = document.getElementById('tab-auth-register');
   if (tabLogin) tabLogin.addEventListener('click', () => switchAuthTab('login'));
   if (tabRegister) tabRegister.addEventListener('click', () => switchAuthTab('register'));
 
-  // 4. Bind Sign In Form
+  // 4. Bind In-Modal Sign In Form
   const loginForm = document.getElementById('auth-login-form');
   const loginError = document.getElementById('login-error-msg');
   if (loginForm) {
@@ -3736,14 +3964,14 @@ function initFirebaseIntegration() {
         showToast(`Welcome back to Katryx, ${user.displayName || 'Patron'}!`, true);
       } catch (err) {
         if (loginError) {
-          loginError.textContent = err.message;
+          loginError.textContent = formatAuthError(err);
           loginError.style.display = 'block';
         }
       }
     });
   }
 
-  // 5. Bind Register Form
+  // 5. Bind In-Modal Register Form
   const registerForm = document.getElementById('auth-register-form');
   const registerError = document.getElementById('register-error-msg');
   if (registerForm) {
@@ -3759,7 +3987,7 @@ function initFirebaseIntegration() {
         showToast(`Atelier Patron profile created for ${name}!`, true);
       } catch (err) {
         if (registerError) {
-          registerError.textContent = err.message;
+          registerError.textContent = formatAuthError(err);
           registerError.style.display = 'block';
         }
       }

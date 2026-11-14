@@ -44,7 +44,7 @@
  let orders=[],users=[];
  try{
    const user=await new Promise(resolve=>{let done=false;const timer=setTimeout(()=>{if(!done){done=true;resolve(S.getCurrentUser());}},2500);S.onAuthChange(u=>{if(!done){done=true;clearTimeout(timer);resolve(u);}});});
-   if(!user){$('admin-message').textContent='Please sign in with the owner account first. Redirecting to login…';setTimeout(()=>location.href='login.html',1000);return;}
+   if(!user){$('admin-message').textContent='Please sign in with the owner account first. Redirecting to login…';setTimeout(()=>location.href='index.html',1000);return;}
    if(!(await S.isCurrentUserAdmin())){$('admin-message').textContent='Access denied. This account is not authorised as the KATRYX owner. Sign in with the admin account after its Firebase admin permission has been configured.';return;}
    $('admin-message').textContent='Owner access verified · Data is loaded directly from your KATRYX Firebase project.';$('admin-content').hidden=false;
    [orders,users]=await Promise.all([S.fetchAllOrdersForAdmin(),S.fetchAllUsersForAdmin()]);
