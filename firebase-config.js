@@ -18,7 +18,7 @@
 
 // Central Firebase Project Configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCegHkQLTGDKRH7sLrJmIYkp4A4cm9iZ0w",
+  apiKey: "AziasyCegHkQLTGDKRH7sLrJmIYkp4A4cm9iZ0w",
   authDomain: "katryx-ab8ac.firebaseapp.com",
   projectId: "katryx-ab8ac",
   storageBucket: "katryx-ab8ac.firebasestorage.app",
