@@ -19,6 +19,7 @@
  const S=window.FirebaseService; if(!S){location.href='index.html';return;} 
  const wait=()=>new Promise(resolve=>{let off=S.onAuthChange(u=>{off&&off();resolve(u)});setTimeout(()=>resolve(S.getCurrentUser()),1200)});
  const user=await wait(); if(!user){location.href='index.html';return;}
+ S.onAuthChange(u=>{if(!u)location.href='index.html';});
  const $=id=>document.getElementById(id);
  const profile=await S.getUserProfile(user.uid)||{};
  $('name').value=profile.name||user.displayName||'';$('email').value=user.email||'';
@@ -26,7 +27,8 @@
  $('profile-form').addEventListener('submit',async e=>{e.preventDefault();$('profile-message').textContent='Saving…';try{await S.updateUserProfile(user.uid,{name:$('name').value,phone:$('phone').value,address:$('address').value,city:$('city').value,pincode:$('pincode').value});$('profile-message').textContent='Profile saved.';}catch(err){$('profile-message').textContent=err.message;}});
  $('logout').onclick=async()=>{await S.logoutUser();location.href='index.html';};
  const money=n=>'₹'+Number(n||0).toLocaleString('en-IN');
- const orders=await S.fetchUserOrders(user.uid);$('orders').innerHTML=orders.length?orders.map(o=>`<div class="account-order"><b>${o.orderId||o.id}</b><br>${o.status||'Received'} · ${money(o.totalAmount)}<br><span class="account-muted">${new Date(o.createdAt).toLocaleDateString()}</span></div>`).join(''):'<p class="account-muted">No orders yet.</p>';
+ const formatDate=d=>d?.toDate?d.toDate().toLocaleDateString('en-IN'):(d?.seconds?new Date(d.seconds*1000).toLocaleDateString('en-IN'):(d?new Date(d).toLocaleDateString('en-IN'):'Recent'));
+ const orders=await S.fetchUserOrders(user.uid);$('orders').innerHTML=orders.length?orders.map(o=>`<div class="account-order"><b>${o.orderId||o.id}</b><br>${(o.status||'Received').replace('_',' ')} · ${money(o.totalAmount)}<br><span class="account-muted">${formatDate(o.createdAt||o.createdAtIso)}</span></div>`).join(''):'<p class="account-muted">No orders yet.</p>';
  const designs=await S.fetchUserCustomDesigns(user.uid);$('designs').innerHTML=designs.length?designs.map(d=>`<div class="account-order"><b>${d.designName||d.productName||'Saved design'}</b><br>${d.leatherFinish||''} · ${d.hardwareFinish||''}</div>`).join(''):'<p class="account-muted">No saved designs yet.</p>';
  const cart=await S.fetchUserCart(user.uid);$('cart-info').textContent=cart.length?cart.reduce((n,i)=>n+(i.quantity||1),0)+' item(s) saved in your account cart.':'Your account cart is empty.';
 })();

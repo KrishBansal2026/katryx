@@ -160,6 +160,9 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
           <span class="user-status-dot" id="user-status-dot" aria-hidden="true"></span>
         </button>
+        <button type="button" class="header-logout-btn auth-only-btn" id="btn-header-logout" style="display:none;" title="Sign out of Katryx" aria-label="Sign out">
+          Sign Out
+        </button>
 
         <!-- Shopping Bag Trigger -->
         <button type="button" class="header-btn cart-btn" id="cart-trigger" aria-label="Open Shopping Bag">
@@ -183,8 +186,16 @@
 
   <!-- Mobile Navigation Panel -->
   <div class="mobile-nav-panel" id="mobile-nav" aria-hidden="true">
+    <div class="mobile-nav-user-bar" id="mobile-nav-user-bar" style="display:none;">
+      <div class="mobile-nav-user-meta">
+        <span class="mobile-nav-user-name" id="mobile-nav-user-name">Patron</span>
+        <span class="mobile-nav-user-email" id="mobile-nav-user-email"></span>
+      </div>
+      <button type="button" class="btn-mobile-logout" id="btn-mobile-logout" aria-label="Sign Out">Sign Out</button>
+    </div>
     <nav class="mobile-nav-links">
       <a href="admin.html" class="mobile-nav-link admin-only-link" style="display:none; color: var(--color-gold, #c49a45); font-weight: 600;">✦ Owner Dashboard <span>→</span></a>
+      <a href="#" class="mobile-nav-link auth-only-link" id="mobile-nav-orders-link" style="display:none;">My Orders &amp; Designs <span>→</span></a>
       <a href="#collection" class="mobile-nav-link">Featured Collection <span>→</span></a>
       <a href="#custom-studio" class="mobile-nav-link">Custom Monogram Studio <span>→</span></a>
       <a href="#leather-guide" class="mobile-nav-link">Material & Leather Guide <span>→</span></a>
@@ -1567,7 +1578,10 @@
           </div>
         </div>
         <a href="admin.html" class="btn btn-primary admin-only-link" style="display:none; margin-top: 14px; width: 100%; text-align: center; text-decoration: none; justify-content: center; align-items: center; background: #3a2115; color: #fff; letter-spacing: 0.1em; font-size: 13px;">✦ Open Owner Dashboard →</a>
-        <button type="button" class="btn btn-secondary" id="btn-auth-logout" style="margin-top: 12px;">Sign Out</button>
+        <button type="button" class="btn btn-secondary btn-logout" id="btn-auth-logout" style="margin-top: 12px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span class="btn-label">Sign Out of Katryx</span>
+          <span class="btn-spinner" aria-hidden="true" style="display:none;"></span>
+        </button>
       </div>
     </div>
   </section>

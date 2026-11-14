@@ -21,6 +21,72 @@ const FirebaseService = (function () {
   let isInitialized = false;
   const authStateSubscribers = [];
 
+  function notifySubscribers(user) {
+    authStateSubscribers.forEach((cb) => {
+      try {
+        cb(user);
+      } catch (err) {
+        console.error('Auth state subscriber error:', err);
+      }
+    });
+  }
+
+  // Cross-tab synchronization bus via BroadcastChannel and localStorage events
+  let syncChannel = null;
+  if (typeof window !== 'undefined' && typeof window.BroadcastChannel === 'function') {
+    try {
+      syncChannel = new window.BroadcastChannel('katryx_auth_sync');
+      syncChannel.onmessage = (event) => {
+        handleCrossTabAuthEvent(event.data);
+      };
+    } catch (e) {
+      console.warn('BroadcastChannel not available:', e.message);
+    }
+  }
+
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'katryx_auth_sync_event' && event.newValue) {
+        try {
+          const data = JSON.parse(event.newValue);
+          handleCrossTabAuthEvent(data);
+        } catch (e) {}
+      }
+    });
+  }
+
+  function broadcastAuthEvent(type, data = {}) {
+    const msg = { type, timestamp: Date.now(), ...data };
+    if (syncChannel) {
+      try { syncChannel.postMessage(msg); } catch (e) {}
+    }
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.setItem('katryx_auth_sync_event', JSON.stringify(msg));
+      } catch (e) {}
+    }
+  }
+
+  function handleCrossTabAuthEvent(data) {
+    if (!data || !data.type) return;
+    if (data.type === 'LOGOUT') {
+      if (currentUser !== null) {
+        currentUser = null;
+        notifySubscribers(null);
+      }
+    } else if (data.type === 'LOGIN') {
+      if (auth && auth.currentUser) {
+        currentUser = auth.currentUser;
+        getUserProfile(currentUser.uid).then(profile => {
+          if (profile) currentUser.profileData = profile;
+          notifySubscribers(currentUser);
+        }).catch(() => {
+          notifySubscribers(currentUser);
+        });
+      }
+    }
+  }
+
   /**
    * Initializes the service by obtaining Firebase instances from firebase-config.js
    */
@@ -65,13 +131,7 @@ const FirebaseService = (function () {
           }
         }
         // Notify all registered UI listeners
-        authStateSubscribers.forEach((cb) => {
-          try {
-            cb(currentUser);
-          } catch (err) {
-            console.error('Auth state subscriber error:', err);
-          }
-        });
+        notifySubscribers(currentUser);
       });
       isInitialized = true;
     }
@@ -119,6 +179,11 @@ const FirebaseService = (function () {
 
     await db.collection('users').doc(user.uid).set(userDocData);
 
+    currentUser = user;
+    currentUser.profileData = userDocData;
+    broadcastAuthEvent('LOGIN', { uid: user.uid });
+    notifySubscribers(currentUser);
+
     return { user, profile: userDocData };
   }
 
@@ -134,6 +199,12 @@ const FirebaseService = (function () {
 
     // Fetch user profile from Firestore
     const profile = await getUserProfile(user.uid);
+    currentUser = user;
+    if (profile) currentUser.profileData = profile;
+
+    broadcastAuthEvent('LOGIN', { uid: user.uid });
+    notifySubscribers(currentUser);
+
     return { user, profile };
   }
 
@@ -142,16 +213,15 @@ const FirebaseService = (function () {
    */
   async function logoutUser() {
     if (auth && auth.signOut) {
-      await auth.signOut();
+      try {
+        await auth.signOut();
+      } catch (err) {
+        console.warn('Firebase signOut notice:', err.message);
+      }
     }
     currentUser = null;
-    authStateSubscribers.forEach((cb) => {
-      try {
-        cb(null);
-      } catch (err) {
-        console.error('Logout subscriber error:', err);
-      }
-    });
+    broadcastAuthEvent('LOGOUT');
+    notifySubscribers(null);
   }
 
   /**
@@ -467,27 +537,59 @@ const FirebaseService = (function () {
     const user = getCurrentUser();
     if (!user || !user.uid) throw new Error('Please sign in before placing an order.');
 
+    if (!orderData) throw new Error('Order data is required.');
+    const rawItems = Array.isArray(orderData.items) ? orderData.items : [];
+    if (rawItems.length === 0) throw new Error('Your shopping bag is empty.');
+
+    const totalAmount = Number(orderData.totalAmount);
+    if (isNaN(totalAmount) || totalAmount <= 0) {
+      throw new Error('Invalid order total.');
+    }
+
     const orderRef = db.collection('orders').doc();
-    const orderId = orderData.orderId || `KX-${Date.now().toString(36).toUpperCase()}`;
+    const orderId = orderData.orderId || `AH-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const nowIso = new Date().toISOString();
+    let serverTime = nowIso;
+    if (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue && typeof firebase.firestore.FieldValue.serverTimestamp === 'function') {
+      serverTime = firebase.firestore.FieldValue.serverTimestamp();
+    }
+
+    // Sanitize item properties for clean persistence
+    const sanitizedItems = rawItems.map((it) => ({
+      productId: String(it.productId || ''),
+      productName: String(it.productName || it.name || 'Custom Leather Piece'),
+      category: String(it.category || 'Leather Goods'),
+      finishName: String(it.finishName || 'Full-Grain Leather'),
+      hardwareName: String(it.hardwareName || 'Solid Brass'),
+      embossText: String(it.embossText || it.monogramText || '—'),
+      customInscription: String(it.customInscription || ''),
+      makerNote: String(it.makerNote || ''),
+      unitPrice: Number(it.unitPrice || it.price || 0),
+      quantity: Math.max(1, parseInt(it.quantity || 1, 10)),
+      image: String(it.image || '')
+    }));
 
     const payload = {
       orderId: orderId,
       userId: user.uid,
       customerDetails: {
-        name: orderData.name || '',
-        email: orderData.email || '',
-        phone: orderData.phone || '',
-        address: orderData.address || '',
-        city: orderData.city || '',
-        pincode: orderData.pincode || ''
+        name: String(orderData.name || user.displayName || (user.profileData && user.profileData.name) || '').trim().slice(0, 100),
+        email: String(orderData.email || user.email || '').trim().toLowerCase().slice(0, 100),
+        phone: String(orderData.phone || '').trim().slice(0, 30),
+        address: String(orderData.address || '').trim().slice(0, 250),
+        city: String(orderData.city || '').trim().slice(0, 100),
+        pincode: String(orderData.pincode || '').trim().slice(0, 12)
       },
-      items: orderData.items || [],
-      totalAmount: orderData.totalAmount || 0,
+      items: sanitizedItems,
+      totalAmount: totalAmount,
+      currency: 'INR',
       status: 'commission_queued',
       isPaid: false,
       paymentStatus: 'unpaid_demonstration',
       academicNotice: 'Academic demonstration commission request. No real financial transaction was executed.',
-      createdAt: new Date().toISOString()
+      createdAt: serverTime,
+      createdAtIso: nowIso
     };
 
     await orderRef.set(payload);
@@ -496,19 +598,48 @@ const FirebaseService = (function () {
 
   /**
    * Retrieves all order commissions for the current user.
+   * Resilient to missing composite indexes in Firestore: tries compound query first,
+   * falls back to single-field userId query with in-memory descending date sort.
    */
   async function fetchUserOrders(userId) {
     if (!db || !userId) return [];
     try {
-      const snap = await db.collection('orders')
-        .where('userId', '==', userId)
-        .orderBy('createdAt', 'desc')
-        .get();
+      let snap;
+      try {
+        snap = await db.collection('orders')
+          .where('userId', '==', userId)
+          .orderBy('createdAt', 'desc')
+          .get();
+      } catch (compoundErr) {
+        // Fallback: If composite index is not yet built in Firestore console,
+        // use single-field query which never fails and sort in memory.
+        console.info('Composite index unavailable, using single-field query fallback:', compoundErr.message);
+        snap = await db.collection('orders')
+          .where('userId', '==', userId)
+          .get();
+      }
 
       const orders = [];
       snap.forEach((doc) => {
         orders.push({ id: doc.id, ...doc.data() });
       });
+
+      // Sort newest-first reliably
+      orders.sort((a, b) => {
+        const getMs = (o) => {
+          if (!o) return 0;
+          if (o.createdAt && typeof o.createdAt.toMillis === 'function') return o.createdAt.toMillis();
+          if (o.createdAt && o.createdAt.seconds) return o.createdAt.seconds * 1000;
+          if (o.createdAtIso) return new Date(o.createdAtIso).getTime();
+          if (o.createdAt) {
+            const d = new Date(o.createdAt);
+            if (!isNaN(d.getTime())) return d.getTime();
+          }
+          return 0;
+        };
+        return getMs(b) - getMs(a);
+      });
+
       return orders;
     } catch (err) {
       console.warn('Could not query orders:', err.message);
@@ -522,10 +653,23 @@ const FirebaseService = (function () {
   async function fetchAllOrdersForAdmin() {
     if (!db) return [];
     try {
-      const snap = await db.collection('orders').orderBy('createdAt', 'desc').get();
+      let snap;
+      try {
+        snap = await db.collection('orders').orderBy('createdAt', 'desc').get();
+      } catch (e) {
+        snap = await db.collection('orders').get();
+      }
       const orders = [];
       snap.forEach((doc) => {
         orders.push({ id: doc.id, ...doc.data() });
+      });
+      orders.sort((a, b) => {
+        const getMs = (o) => {
+          if (o.createdAt?.toMillis) return o.createdAt.toMillis();
+          if (o.createdAt?.seconds) return o.createdAt.seconds * 1000;
+          return new Date(o.createdAt || o.createdAtIso || 0).getTime();
+        };
+        return getMs(b) - getMs(a);
       });
       return orders;
     } catch (err) {

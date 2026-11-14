@@ -23,6 +23,7 @@ secrets/
 
 # Local backups and temporary directories
 _backup_pre_repair/
+_backup_stage2_auth_orders/
 scratch/
 *.log
 

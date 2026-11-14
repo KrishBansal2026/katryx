@@ -1793,6 +1793,14 @@ function initNavigationAndModals() {
   const mobileToggle = document.getElementById('mobile-toggle');
   const mobileNav = document.getElementById('mobile-nav');
 
+  function closeMobileNav() {
+    if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'false');
+    if (mobileNav) {
+      mobileNav.classList.remove('is-open');
+      mobileNav.setAttribute('aria-hidden', 'true');
+    }
+  }
+
   if (mobileToggle && mobileNav) {
     mobileToggle.addEventListener('click', () => {
       const isExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
@@ -1804,9 +1812,7 @@ function initNavigationAndModals() {
     // Close mobile nav when clicking any link
     mobileNav.querySelectorAll('.mobile-nav-link').forEach(link => {
       link.addEventListener('click', () => {
-        mobileToggle.setAttribute('aria-expanded', 'false');
-        mobileNav.classList.remove('is-open');
-        mobileNav.setAttribute('aria-hidden', 'true');
+        closeMobileNav();
       });
     });
   }
@@ -1921,8 +1927,8 @@ function openCheckoutModal() {
   const signedInUser = (typeof FirebaseService !== 'undefined' && FirebaseService.getCurrentUser)
     ? FirebaseService.getCurrentUser() : null;
   if (!signedInUser) {
-    showToast('Please sign in to place your order.');
-    window.location.href = 'login.html?redirect=checkout';
+    showToast('Please sign in before placing a commission order.', false);
+    openAccountModal('login');
     return;
   }
 
@@ -2008,6 +2014,8 @@ function closeCheckoutModal() {
   document.body.style.overflow = '';
 }
 
+let isSubmittingOrder = false;
+
 function initCheckoutForm() {
   const form = document.getElementById('checkout-form');
   const formView = document.getElementById('checkout-form-view');
@@ -2018,8 +2026,32 @@ function initCheckoutForm() {
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      if (isSubmittingOrder) return;
+
+      const user = (typeof FirebaseService !== 'undefined' && FirebaseService.getCurrentUser)
+        ? FirebaseService.getCurrentUser() : null;
+
+      if (!user) {
+        showToast('Please sign in before placing a commission order.', false);
+        closeCheckoutModal();
+        openAccountModal('login');
+        return;
+      }
+
+      if (!cartItems || cartItems.length === 0) {
+        showToast('Your shopping bag is empty.', false);
+        return;
+      }
+
       const submitButton = form.querySelector('[type="submit"]');
-      if (submitButton) submitButton.disabled = true;
+      const originalBtnText = submitButton ? submitButton.innerHTML : '';
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span>Registering Commission...</span>';
+      }
+
+      isSubmittingOrder = true;
 
       // Generate simulated luxury commission order reference ID
       const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -2041,10 +2073,9 @@ function initCheckoutForm() {
       // Asynchronously store real order document in Cloud Firestore
       if (typeof FirebaseService !== 'undefined' && FirebaseService.createOrderRecord) {
         try {
-          const user = FirebaseService.getCurrentUser ? FirebaseService.getCurrentUser() : null;
           await FirebaseService.createOrderRecord({
             orderId: generatedOrderId,
-            userId: user ? user.uid : 'guest',
+            userId: user.uid,
             name: customerName,
             email: customerEmail,
             phone: customerPhone,
@@ -2054,16 +2085,24 @@ function initCheckoutForm() {
             items: [...cartItems],
             totalAmount: subtotal
           });
-          console.log(`✓ Order ${generatedOrderId} saved to Cloud Firestore`);
+          console.log(`✓ Order ${generatedOrderId} saved to Cloud Firestore for user ${user.uid}`);
         } catch (fbErr) {
           console.error('Could not store order in Firestore:', fbErr);
           showToast(fbErr.message || 'Order could not be saved. Please try again.');
-          const submitButton = form.querySelector('[type="submit"]');
-          if (submitButton) submitButton.disabled = false;
+          isSubmittingOrder = false;
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalBtnText;
+          }
           return;
         }
       } else {
         showToast('Order service is unavailable. Please reload and try again.');
+        isSubmittingOrder = false;
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.innerHTML = originalBtnText;
+        }
         return;
       }
 
@@ -2074,8 +2113,20 @@ function initCheckoutForm() {
       // Clear the shopping bag
       cartItems = [];
       saveCartToStorage();
+      updateCartUI();
+
+      // Immediately refresh user's orders in account modal
+      if (user && user.uid) {
+        loadUserOrdersUI(user.uid);
+      }
 
       showToast(`Demonstration Commission ${generatedOrderId} registered successfully!`);
+
+      isSubmittingOrder = false;
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalBtnText;
+      }
     });
   }
 
@@ -3326,6 +3377,22 @@ function handleAuthStateUpdate(user) {
     if (unauthView) unauthView.style.display = 'none';
     if (authView) authView.style.display = 'block';
 
+    // Show header logout button & mobile nav user info
+    const headerLogoutBtn = document.getElementById('btn-header-logout');
+    if (headerLogoutBtn) headerLogoutBtn.style.display = 'inline-block';
+
+    const mobileUserBar = document.getElementById('mobile-nav-user-bar');
+    const mobileUserName = document.getElementById('mobile-nav-user-name');
+    const mobileUserEmail = document.getElementById('mobile-nav-user-email');
+    const mobileLogoutBtn = document.getElementById('btn-mobile-logout');
+    const mobileOrdersLink = document.getElementById('mobile-nav-orders-link');
+
+    if (mobileUserBar) mobileUserBar.style.display = 'flex';
+    if (mobileUserName) mobileUserName.textContent = displayName;
+    if (mobileUserEmail) mobileUserEmail.textContent = user.email || '';
+    if (mobileLogoutBtn) mobileLogoutBtn.style.display = 'inline-block';
+    if (mobileOrdersLink) mobileOrdersLink.style.display = 'flex';
+
     // Synchronize guest cart with user's cloud cart in Firestore
     if (typeof FirebaseService !== 'undefined' && FirebaseService.syncGuestCartToUser && user.uid) {
       FirebaseService.syncGuestCartToUser(user.uid, cartItems).then(merged => {
@@ -3359,6 +3426,27 @@ function handleAuthStateUpdate(user) {
     document.querySelectorAll('.admin-only-link').forEach(el => {
       el.style.display = 'none';
     });
+
+    // Hide header logout button & mobile nav user info
+    const headerLogoutBtn = document.getElementById('btn-header-logout');
+    if (headerLogoutBtn) headerLogoutBtn.style.display = 'none';
+
+    const mobileUserBar = document.getElementById('mobile-nav-user-bar');
+    const mobileLogoutBtn = document.getElementById('btn-mobile-logout');
+    const mobileOrdersLink = document.getElementById('mobile-nav-orders-link');
+    if (mobileUserBar) mobileUserBar.style.display = 'none';
+    if (mobileLogoutBtn) mobileLogoutBtn.style.display = 'none';
+    if (mobileOrdersLink) mobileOrdersLink.style.display = 'none';
+
+    // Reset account modal lists so no stale customer data persists
+    const ordersList = document.getElementById('account-orders-list');
+    if (ordersList) ordersList.innerHTML = '<p class="account-muted">Sign in to view your commissions.</p>';
+    const designsList = document.getElementById('saved-designs-list');
+    if (designsList) designsList.innerHTML = '<p class="account-muted">Sign in to view your saved designs.</p>';
+    const ordersCount = document.getElementById('orders-count');
+    if (ordersCount) ordersCount.textContent = '0';
+    const designsCount = document.getElementById('saved-designs-count');
+    if (designsCount) designsCount.textContent = '0';
 
     // 2. Unauthenticated: Hide storefront, present full-screen Auth Gate
     if (store) store.style.display = 'none';
@@ -3575,6 +3663,12 @@ async function loadUserOrdersUI(userId) {
   const countBadge = document.getElementById('orders-count');
   if (!listContainer || !userId || typeof FirebaseService === 'undefined') return;
 
+  listContainer.innerHTML = `
+    <div style="padding: 16px; text-align: center; color: var(--color-muted);">
+      <p style="font-size: 0.85rem; margin: 0;">Retrieving workshop commissions...</p>
+    </div>
+  `;
+
   try {
     const orders = await FirebaseService.fetchUserOrders(userId);
     if (countBadge) countBadge.textContent = orders.length;
@@ -3590,22 +3684,59 @@ async function loadUserOrdersUI(userId) {
     }
 
     listContainer.innerHTML = orders.map(ord => {
-      const dateStr = ord.createdAt ? new Date(ord.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recent';
-      const itemsCount = Array.isArray(ord.items) ? ord.items.reduce((acc, i) => acc + (i.quantity || 1), 0) : 0;
-      const itemsNames = Array.isArray(ord.items) ? ord.items.map(i => i.productName).join(', ') : 'Custom Piece';
+      // Robust date extraction
+      let dateStr = 'Recent';
+      if (ord.createdAt) {
+        if (typeof ord.createdAt.toDate === 'function') {
+          dateStr = ord.createdAt.toDate().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        } else if (ord.createdAt.seconds) {
+          dateStr = new Date(ord.createdAt.seconds * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        } else if (ord.createdAtIso) {
+          dateStr = new Date(ord.createdAtIso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        } else {
+          const d = new Date(ord.createdAt);
+          if (!isNaN(d.getTime())) dateStr = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+      }
+
+      const items = Array.isArray(ord.items) ? ord.items : [];
+      const itemsCount = items.reduce((acc, i) => acc + (i.quantity || 1), 0);
+      const rawStatus = String(ord.status || 'commission_queued').toLowerCase();
+      const statusClass = rawStatus.includes('delivered') ? 'delivered' : (rawStatus.includes('shipped') ? 'shipped' : (rawStatus.includes('processing') ? 'processing' : 'queued'));
+      const statusLabel = rawStatus.replaceAll('_', ' ');
+
+      const itemsRowsHtml = items.map(it => {
+        const itemDetails = [it.finishName];
+        if (it.embossText && it.embossText !== '—') itemDetails.push(`Embossed: "${it.embossText}"`);
+        if (it.customInscription) itemDetails.push(`Inscription: "${it.customInscription}"`);
+        return `
+          <div class="order-item-mini-row">
+            <span><strong>${it.productName || 'Bespoke Piece'}</strong> × ${it.quantity || 1} <small style="color:var(--color-muted);">(${itemDetails.filter(Boolean).join(' • ')})</small></span>
+            <span>${formatRupees((it.unitPrice || 0) * (it.quantity || 1))}</span>
+          </div>
+        `;
+      }).join('');
 
       return `
-        <div class="account-card">
-          <div class="account-card-info">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-              <h4 style="margin: 0;">Commission ${ord.orderId}</h4>
-              <span class="status-pill">${ord.status === 'confirmed' ? 'Confirmed' : 'Queued • Unpaid Demo'}</span>
+        <div class="account-card" style="margin-bottom: 12px; padding: 14px; border: 1px solid rgba(43, 26, 18, 0.12); border-radius: 4px; background: #fff;">
+          <div class="account-card-order-head">
+            <div>
+              <span style="font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-muted); display: block;">Reference</span>
+              <h4 style="margin: 2px 0 0; font-size: 1rem; color: var(--color-charcoal); font-family: var(--font-serif);">${ord.orderId || ord.id}</h4>
             </div>
-            <div class="account-card-meta">
-              <span><strong>Pieces (${itemsCount}):</strong> ${itemsNames}</span>
-              <span><strong>Total:</strong> ${formatRupees(ord.totalAmount)}</span>
-              <span><strong>Date:</strong> ${dateStr}</span>
+            <div style="text-align: right;">
+              <span class="order-status-tag order-status-${statusClass}">${statusLabel}</span>
+              <span style="display: block; font-size: 0.72rem; color: var(--color-muted); margin-top: 4px;">${ord.isPaid ? 'Paid' : 'Unpaid Demo'}</span>
             </div>
+          </div>
+
+          <div class="order-items-mini-list">
+            ${itemsRowsHtml || '<div style="font-size: 0.78rem; color: var(--color-muted);">Bespoke leather commission</div>'}
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(43, 26, 18, 0.08); font-size: 0.85rem;">
+            <span style="color: var(--color-muted); font-size: 0.75rem;">Placed on ${dateStr}</span>
+            <span style="font-weight: 700; color: var(--color-cognac); font-size: 1rem;">${formatRupees(ord.totalAmount)}</span>
           </div>
         </div>
       `;
@@ -3613,6 +3744,12 @@ async function loadUserOrdersUI(userId) {
 
   } catch (err) {
     console.warn('Error rendering user orders:', err);
+    listContainer.innerHTML = `
+      <div class="account-empty-state" style="color: #b33;">
+        <p>Could not retrieve orders at this time.</p>
+        <p style="font-size: 0.75rem; margin-top: 4px;">${err.message || 'Please check your connection and retry.'}</p>
+      </div>
+    `;
   }
 }
 
@@ -4012,13 +4149,63 @@ function initFirebaseIntegration() {
     });
   }
 
-  // 6. Bind Sign Out Button
+  // 6. Bind Sign Out Buttons (Modal, Header, and Mobile)
   const logoutBtn = document.getElementById('btn-auth-logout');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
-      await FirebaseService.logoutUser();
-      showToast('Signed out of Katryx.');
-      closeAccountModal();
+      const spinner = logoutBtn.querySelector('.btn-spinner');
+      const label = logoutBtn.querySelector('.btn-label');
+      logoutBtn.disabled = true;
+      if (spinner) spinner.style.display = 'inline-block';
+      if (label) label.textContent = 'Signing Out...';
+
+      try {
+        await FirebaseService.logoutUser();
+        showToast('Signed out of Katryx.');
+        closeAccountModal();
+      } catch (err) {
+        showToast(err.message || 'Error signing out.');
+      } finally {
+        logoutBtn.disabled = false;
+        if (spinner) spinner.style.display = 'none';
+        if (label) label.textContent = 'Sign Out of Katryx';
+      }
+    });
+  }
+
+  const headerLogoutBtn = document.getElementById('btn-header-logout');
+  if (headerLogoutBtn) {
+    headerLogoutBtn.addEventListener('click', async () => {
+      try {
+        await FirebaseService.logoutUser();
+        showToast('Signed out of Katryx.');
+      } catch (err) {
+        showToast(err.message || 'Error signing out.');
+      }
+    });
+  }
+
+  const mobileLogoutBtn = document.getElementById('btn-mobile-logout');
+  if (mobileLogoutBtn) {
+    mobileLogoutBtn.addEventListener('click', async () => {
+      try {
+        closeMobileNav();
+        await FirebaseService.logoutUser();
+        showToast('Signed out of Katryx.');
+      } catch (err) {
+        showToast(err.message || 'Error signing out.');
+      }
+    });
+  }
+
+  const mobileOrdersLink = document.getElementById('mobile-nav-orders-link');
+  if (mobileOrdersLink) {
+    mobileOrdersLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeMobileNav();
+      openAccountModal('account');
+      const subtabOrders = document.getElementById('subtab-btn-orders');
+      if (subtabOrders) subtabOrders.click();
     });
   }
 
@@ -4041,6 +4228,12 @@ function initFirebaseIntegration() {
       subtabDesigns.classList.remove('is-active');
       if (panelOrders) panelOrders.style.display = 'block';
       if (panelDesigns) panelDesigns.style.display = 'none';
+
+      // Always re-fetch orders on click to ensure fresh list
+      const u = (typeof FirebaseService !== 'undefined' && FirebaseService.getCurrentUser) ? FirebaseService.getCurrentUser() : null;
+      if (u && u.uid) {
+        loadUserOrdersUI(u.uid);
+      }
     });
   }
 
