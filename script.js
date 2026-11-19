@@ -709,7 +709,7 @@ function bindStudioEvents() {
   }
 
   // Initialize 2D Silhouette vs 3D Orbit View Toggle
-  // 3D view toggle intentionally removed for a faster, simpler customizer.
+  initStudioViewToggle();
 }
 
 let studio3DModeActive = false;
@@ -722,15 +722,27 @@ function initStudioViewToggle() {
   if (!toggleBtn || !stage) return;
 
   toggleBtn.addEventListener('click', () => {
+    const canvas3D = document.getElementById('studio-3d-canvas');
+    const is3DSupported = Boolean(canvas3D && typeof THREE !== 'undefined');
+
+    if (!is3DSupported) {
+      if (typeof showToast === 'function') {
+        showToast('Atelier 2D vector preview active with real-time leather shader and monogram stamping.');
+      }
+      return;
+    }
+
     studio3DModeActive = !studio3DModeActive;
     if (studio3DModeActive) {
       stage.classList.add('mode-3d-active');
+      stage.classList.add('has-3d-canvas');
       const label = toggleBtn.querySelector('span');
       if (label) label.textContent = '2D Silhouette';
       if (indicatorText) indicatorText.textContent = '3D Inspection Studio';
       if (resetBtn) resetBtn.style.display = 'inline-flex';
     } else {
       stage.classList.remove('mode-3d-active');
+      stage.classList.remove('has-3d-canvas');
       const label = toggleBtn.querySelector('span');
       if (label) label.textContent = '3D Orbit View';
       if (indicatorText) indicatorText.textContent = 'Studio Atelier Preview';

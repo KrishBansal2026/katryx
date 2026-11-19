@@ -1956,6 +1956,18 @@ ul, ol {
   height: 1px;
 }
 
+.studio-vector-stage:empty + .studio-product-image.fallback-img,
+.studio-vector-stage:empty ~ #studio-svg-image {
+  position: relative;
+  opacity: 1;
+  pointer-events: auto;
+  width: auto;
+  height: auto;
+  max-width: 90%;
+  max-height: 85%;
+  object-fit: contain;
+}
+
 .studio-product-image,
 #studio-svg-image {
   max-width: 90%;
@@ -1974,10 +1986,10 @@ ul, ol {
   pointer-events: auto;
 }
 
-.canvas-stage.mode-3d-active .studio-vector-stage,
-.canvas-stage.mode-3d-active .studio-product-image,
-.canvas-stage.mode-3d-active #studio-svg-image,
-.canvas-stage.mode-3d-active #monogram-live-stamp {
+.canvas-stage.mode-3d-active.has-3d-canvas .studio-vector-stage,
+.canvas-stage.mode-3d-active.has-3d-canvas .studio-product-image,
+.canvas-stage.mode-3d-active.has-3d-canvas #studio-svg-image,
+.canvas-stage.mode-3d-active.has-3d-canvas #monogram-live-stamp {
   opacity: 0;
   pointer-events: none;
 }
@@ -4786,20 +4798,59 @@ ul, ol {
 .hero-static-visual .hero-provenance-caption { max-width: none; }
 .hero-static-visual .provenance-status { color: var(--color-brass-light); }
 
-/* The old visualizer column reserved half the screen after 3D was removed.
-   Hide that empty pane and let the actual configuration form use the full width. */
-.studio-workbench {
-  display: block;
+/* KATRYX — Restored Custom Studio Live Product Visualizer & Responsive Workstation */
+#custom-studio .studio-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.16fr) minmax(0, 1fr);
+  gap: clamp(28px, 3.2vw, 52px);
+  align-items: start;
   width: 100%;
+  box-sizing: border-box;
 }
-.studio-visualizer-card { display: none !important; }
-.studio-controls {
+
+#custom-studio .studio-visualizer-card {
+  display: flex !important;
+  visibility: visible !important;
+  position: sticky;
+  top: 96px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: clamp(1.25rem, 2vw, 2rem);
+  box-shadow: var(--shadow-sm);
+  flex-direction: column;
+  gap: 1.25rem;
+  z-index: 5;
+}
+
+#custom-studio .studio-controls {
   width: 100%;
-  max-width: 1120px;
-  margin: 0 auto;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
   gap: clamp(1.5rem, 2.5vw, 2.25rem);
 }
-.studio-step-block { width: 100%; }
+
+#custom-studio .studio-step-block {
+  width: 100%;
+}
+
+@media (max-width: 992px) {
+  #custom-studio .studio-workbench {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  #custom-studio .studio-visualizer-card {
+    position: static;
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  #custom-studio .studio-controls {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+}
 
 @media (max-width: 1080px) {
   .hero-grid { grid-template-columns: 1fr; }
